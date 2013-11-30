@@ -1,0 +1,56 @@
+histogrm of oriented gradients for shape detect
+(rottn invariant)
+single template
+
+stroke with transform character recog
+histogram 
+Optical character reccogon
+
+neural network: http://yann.lecun.com/exdb/mnist/
+
+segmentation??
+
+bunary image->cvMatchTemplate()
+CvHaarClassifierCascade   // need a lot of samples
+
+how to read time from recorded images?
+http://stackoverflow.com/questions/4503475/how-to-read-time-from-recorded-surveillance-camera-video/4538535
+
+OCR:
+http://www.ocr-it.com/user-scenario-process-digital-camera-pictures-and-ocr-to-extract-specific-numbers
+
+Template matching tend not to be robust for this sort of application because of lighting inconsistencies, orientation changes, scale changes etc. The typical way of solving this problem is to bring in machine learning. What you are trying to do by training your own boosting classifier is one possible approach.
+If you are unfamiliar with machine learning, here is roughly what you should do: 1) You need to collect many positive training samples (from hundred onwards but generally the more the merrier) of the object you are trying to detect. If you are trying to detect individual characters in the image, then get cropped images of individual characters. You can start with the MNIST database for this. Better yet, to train the classifier for your particular problem, get many cropped images of the characters on the bus from photos. If you are trying to detect the entire rectangular LED board panel, then use images of them as your positive training samples.
+
+2) You will need to collect many negative training samples. Their number should be in the same order as the number of positive training samples you have. These could be images of the other objects that appear in the images you will run your detector on. For example, you could crop images of the front of the bus, road surfaces, trees along the road etc. and use them as negative examples. This is to help the classifier rule out these objects in the image you run your detector on. Hence, negative examples are not just any image containing objects you don't want to detect. They should be objects that could be mistaken for the object you are trying to detect in the images you run your detector on (at least for your case)
+
+See the following link on how to train the cascade of classifier and produce the XML model file: http://note.sonots.com/SciSoftware/haartraining.html
+
+Detecting characters in this region in a sliding window manner will give you the order the characters appear so you can string them into words etc.
+
+http://opencv.willowgarage.com/documentation/cpp/support_vector_machines.html and gray images as feature vectors. 
+
+
+    Extract the number
+    Find the bounding box
+    Scale the image down to something like 10x8, try to match the aspect ratio
+
+    Do this for a small training set, take the 'average' image for each number
+
+    For new images, follow the steps above, but the last is just a absolute image difference with each of the number-templates. Then take the sum of the differences (pixels in the difference image). The one with the minimum is your number.
+
+All above are basic OpenCV operations.
+
+http://stackoverflow.com/questions/9413216/simple-digit-recognition-ocr-in-opencv-python
+
+
+Things to implement:
+alignment of no in window-- wont be needed as we are detecting d combined 2 digit no bounding box
+check for two orientations (rotated by 180)
+1x1 window for HOG -- wont be needed 
+cvNormalize-- not needed
+scale -- resize done
+bhattacharya histogram matching
+generalise no of bins   "B"
+
+
