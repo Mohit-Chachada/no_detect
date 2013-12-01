@@ -21,6 +21,7 @@
     const int HOG3_size=81; 
     const int HOG4_size=9;    
     char pathToImages[] = "./images";  
+    bool temp_match=true;
     
     void PreProcessImage(Mat *inImage,Mat *outImage,int sizex, int sizey);  
     void LearnFromImages(CvMat* trainData, CvMat* trainClasses);  
@@ -346,13 +347,133 @@ cvReleaseMat(&H);
 }
     
    
+
+vector<Mat> HOGMatching_Template() {
+
+       int print_nos[]={10,16,37,98};
+	vector<Mat> hist;
+	hist.resize(4);
+      /*
+       // Histograms Params
+       int histSize = 9;	// number of bins
+       float range[] = { 0, 256 };	// ranges of grayscale values
+       const float* histRange = { range };
+       bool uniform = true; bool accumulate = false;       
+       */
+       for (int i=0;i<4;i++){
+	       stringstream ss;
+	       ss << print_nos[i];
+	       string s_no = ss.str();
+	       Mat temp=imread((string)(pathToImages)+"/"+s_no+".png");       	
+	       if(temp.empty()){
+	       cout<<"empty image\n";
+	       }
+	    /* Mat temp_hist;
+	       PreProcessImage(&temp, &outfile, 50, 40);
+	       // Compute the histograms:
+	       calcHist( &outfile, 1, 0, Mat(), temp_hist, 1, &histSize, &histRange, uniform, accumulate );
+	       normalize( temp_hist, temp_hist, 0, 1, NORM_MINMAX, -1, Mat() );
+            */ 
+          Mat outfile;     
+         resize(temp,outfile,Size(100,80));
+	 IplImage copy = outfile;
+	 IplImage* img2 = &copy;	
+         vector<float> ders;       	  
+       	 HOG3(img2,ders);
+
+         CvMat* temp_hist;
+         //temp_hist(1, ders.size(), CV_32FC1,Scalar::all(0));
+         temp_hist = cvCreateMat(1, ders.size(), CV_32FC1);  
+         for (int j = 0; j < ders.size(); j++)  
+         {  
+          temp_hist->data.fl[j]= ders.at(j);
+          //temp_hist.at<float>(1,j) = ders.at(j);  
+          //cout<<"ders "<<ders[j]<<"\n";
+          //cout<<"temp_hist "<<temp_hist->data.fl[j]<<"\n";
+           
+         } 
+        hist[i]=temp_hist;
+        //cvCopy(temp_hist,hist[i]);
+         //hist[i]=temp_hist.clone();
+        // cout<< "cols "<<temp_hist.data[34]<<"\n";
+        // cout<<i<<"\t"<<hist[i]<<"\n";
+       }
+               // cout<<0<<"\t"<<hist[2]<<"\n";
+       return hist;
+}
+
+void HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
+      Mat outfile;
+      int matched_templ[4];
+    /*  // test_img histogram
+      Mat test_hist;
+      int histSize = 9;	// number of bins
+      float range[] = { 0, 256 };	// ranges of grayscale values
+      const float* histRange = { range };
+      bool uniform = true; bool accumulate = false;
+      PreProcessImage(&test_img, &outfile, 50, 40);
+      calcHist( &outfile, 1, 0, Mat(), test_hist, 1, &histSize, &histRange, uniform, accumulate );
+      normalize( test_hist, test_hist, 0, 1, NORM_MINMAX, -1, Mat() );
+    */
+     
+         resize(test_img,outfile,Size(100,80));
+         imshow("test_img",outfile);
+     	 waitKey(0);
+	 IplImage copy = outfile;
+	 IplImage* img2 = &copy;	
+         vector<float> ders;       	  
+       	 HOG3(img2,ders);
+         CvMat* test_hist;
+         test_hist = cvCreateMat(1, ders.size(), CV_32FC1);  
+         for (int n = 0; n < ders.size(); n++)  
+         {  
+          test_hist->data.fl[n] = ders.at(n);  
+         } 
+      Mat test_hist2=test_hist;
+      float comparison [4][4];
+      
+      for (int i=0;i<4;i++) { 
+       Mat temp_hist=hist[i];
+       for (int j=0;j<4;j++) {
+      	int compare_method = j;
+	comparison[i][j] = compareHist( test_hist2, temp_hist, compare_method );
+	cout<<comparison[i][j]<<"\t";
+       }
+       cout<<"\n";
+      }
+
+     // finding matched template
+       for (int j=0;j<4;j++) {
+       	  float _minm,_maxm;
+      	  if(j==1||j==3) {
+      	      _minm = min( min(comparison[0][j],comparison[1][j]) , min(comparison[2][j],comparison[3][j]) );
+ 	      for (int k=0;k<4;k++) {
+      	 	 if (_minm==comparison[k][j]) matched_templ[j]=k+1;
+      	      }
+      	  }
+      	  else {
+              _maxm = max( max(comparison[0][j],comparison[1][j]) , max(comparison[2][j],comparison[3][j]) );
+ 	      for (int k=0;k<4;k++) {
+      	 	 if (_maxm==comparison[k][j]) matched_templ[j]=k+1;
+      	      }
+      	  }
+       }  
+    cout<<matched_templ[0]<<"\t"<<matched_templ[1]<<"\t"<<matched_templ[2]<<"\t"<<matched_templ[3]<<"\n";
+    
+    // finding the matched template given by most methods
+    
+}
+
+
     
     
-    /** @function main */  
-    int main(int argc, char** argv)  
-    {  
-      int descriptor_size;
-     // start the timer
+/** @function main */  
+int main(int argc, char** argv)  
+{  
+   if (!temp_match) {
+    
+     int descriptor_size;
+     // timer
      clock_t time=clock(); 
       
 //     CvMat* trainData = cvCreateMat(classes * train_samples,ImageSize, CV_32FC1);  
@@ -360,7 +481,6 @@ cvReleaseMat(&H);
      if (descriptor==1) descriptor_size=HOG1_size; 
      else if (descriptor==2) descriptor_size=ImageSize;
      else if (descriptor==3) descriptor_size=HOG3_size;
-     else if (descriptor==4) descriptor_size=HOG4_size;
      
      trainData = cvCreateMat(classes * train_samples,descriptor_size, CV_32FC1);
      CvMat* trainClasses = cvCreateMat(classes * train_samples, 1, CV_32FC1);  
@@ -395,7 +515,7 @@ cvReleaseMat(&H);
      }
      
      time=clock()-time;
-     float training_time=((float)time)/CLOCKS_PER_SEC;   //time for single run
+     float training_time=((float)time)/CLOCKS_PER_SEC;   
      cout<<"Training Time "<<training_time<<"\n";     
      
      //RunSelfTest(knearest, SVM);  
@@ -404,8 +524,19 @@ cvReleaseMat(&H);
      time=clock();
      AnalyseImage(knearest, SVM); 
      time=clock()-time;
-     float run_time=((float)time)/CLOCKS_PER_SEC;   //time for single run
+     float run_time=((float)time)/CLOCKS_PER_SEC;   
      cout<<"Run Time "<<run_time<<"\n"; 
+   
+   }  
+   else {
+     	vector<Mat> hist;
+     	Mat test_img=imread((string)(pathToImages)+"/"+"98.png");
+     	// Template Histograms
+	hist = HOGMatching_Template();
+	//cout<<(hist)[0]<<"\n"<<(hist)[1]<<"\n"<<(hist)[2]<<"\n"<<(hist)[3]<<"\n";
+	// Compare Histogram
+	HOGMatching_Compare(hist,test_img);
+     }
           
      waitKey(0);
      return 0;  
@@ -642,7 +773,7 @@ cvReleaseMat(&H);
      Mat _image,image, gray, blur, thresh;  
       
      vector < vector<Point> > contours;  
-     _image = imread("./images/37.png", 1);  
+     _image = imread("./images/10.png", 1);  
      //image = imread("./images/all_4.png", 1);  
      
      resize(_image,image,Size(2*sizex,1.2*sizey));
