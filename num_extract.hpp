@@ -26,6 +26,7 @@ private:
 	int HOG3_size;
 	char pathToImages[200];
 	bool temp_match;
+    int print_nos[4];
 
 protected:
 
