@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <time.h>
+//#include "svm.h"
 
 using namespace cv;
 using namespace std;
@@ -466,10 +467,11 @@ int main(int argc, char** argv)
             params.svm_type    = CvSVM::C_SVC;
             params.kernel_type = CvSVM::LINEAR;
             params.term_crit   = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
+            const CvMat *varIdx=0; const CvMat *sampleIdx=0;
 
             // Train the SVM
-            SVM.train(trainData, trainClasses, Mat(), Mat(), params);
-            SVM.save("SVM_training_data");
+            SVM.train(trainData, trainClasses,varIdx,sampleIdx, params);
+            //SVM.save("SVM_training_data");
             break;
         }
         case 2:
