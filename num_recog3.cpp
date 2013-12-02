@@ -493,7 +493,7 @@ int main(int argc, char** argv)
         time=clock()-time;
         float run_time=((float)time)/CLOCKS_PER_SEC;
         cout<<"Run Time "<<run_time<<"\n";
-        cout<< "digits are " << digits[0] <<" & "<<digits[1]<<"\n";
+       // cout<< "digits are " << digits[0] <<" & "<<digits[1]<<"\n";
 
         // find no from detected digits
       /* for (int i=0; i< print_nos.cols; i++) {
@@ -508,7 +508,7 @@ int main(int argc, char** argv)
         if (digits[0]==7 || digits[1]==7) result_ml=37;
         if (digits[0]==6 || digits[1]==6) result_ml=16;
         if (digits[0]==0 || digits[1]==0) result_ml=10;
-        cout<<"Result_ml "<<result_ml<<endl;
+       // cout<<"Result_ml "<<result_ml<<endl;
     }
     else {
         vector<Mat> hist;
