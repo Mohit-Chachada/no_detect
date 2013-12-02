@@ -865,41 +865,6 @@ vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
 }
 
 
-void Num_Extract::PreProcessImage(Mat *inImage,Mat *outImage,int sizex, int sizey)
-{
-    Mat grayImage,blurredImage,thresholdImage,contourImage,regionOfInterest;
-
-    vector<vector<Point> > contours;
-
-    cvtColor(*inImage,grayImage , COLOR_BGR2GRAY);
-
-    GaussianBlur(grayImage, blurredImage, Size(5, 5), 2, 2);
-    adaptiveThreshold(blurredImage, thresholdImage, 255, 1, 1, 11, 2);
-
-    thresholdImage.copyTo(contourImage);
-
-    findContours(contourImage, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
-
-    int idx = 0;
-    size_t area = 0;
-    for (size_t i = 0; i < contours.size(); i++)
-    {
-        if (area < contours[i].size() )
-        {
-            idx = i;
-            area = contours[i].size();
-        }
-    }
-
-    Rect rec = boundingRect(contours[idx]);
-
-    regionOfInterest = thresholdImage(rec);
-
-    resize(regionOfInterest,*outImage, Size(sizex, sizey));
-
-}
-
-
 void Num_Extract::LearnFromImages(CvMat* trainData, CvMat* trainClasses)
 {
     Mat img,outfile;
