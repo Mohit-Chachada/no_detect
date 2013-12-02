@@ -2,47 +2,47 @@
 
 Num_Extract::Num_Extract(){
     classifier = 1;    // use 1 SVM
-	train_samples = 4;
-	classes = 10;
-	sizex = 20;
-	sizey = 30;
-	ImageSize = sizex * sizey;
-	HOG3_size=81;
-	sprintf(pathToImages,"%s","./images");
-	temp_match=false;
-	pi = 3.1416;
+    train_samples = 4;
+    classes = 10;
+    sizex = 20;
+    sizey = 35;
+    ImageSize = sizex * sizey;
+    HOG3_size=81;
+    sprintf(pathToImages,"%s","./images");
+    temp_match=false;
+    pi = 3.1416;
 }
 
 Num_Extract::~Num_Extract(){
 }
 
 bool Num_Extract::A_encloses_B(RotatedRect A, RotatedRect B){
-	Point2f ptsA[4];
-	Point2f ptsB[4];
-	A.points(ptsA);
-	B.points(ptsB);
-	bool encloses = true;
-	Point2f p1,p2,p3,p4;
-	double m = 0;
-	double indicator = 0;
-	double test_val = 0;
-	for(int i = 0 ; i < 4 ; i++){
-		p1 = ptsA[i];
-		p2 = ptsA[(i+1)%4];
-		p3 = ptsA[(i+2)%4];
-		m = (p2.y-p1.y)/(p2.x-p1.x);
-		indicator = (p3.y-p1.y)-m*(p3.x-p1.x);
-		for(int j = 0 ; j<4 ; j++){
-			p4 = ptsB[j];
-			test_val = (p4.y-p1.y)-m*(p4.x-p1.x);
-			if(test_val*indicator<0){
-				encloses = false;
-				break;
-			}
-		}
-		if(!encloses) break;
-	}
-	return encloses;
+    Point2f ptsA[4];
+    Point2f ptsB[4];
+    A.points(ptsA);
+    B.points(ptsB);
+    bool encloses = true;
+    Point2f p1,p2,p3,p4;
+    double m = 0;
+    double indicator = 0;
+    double test_val = 0;
+    for(int i = 0 ; i < 4 ; i++){
+        p1 = ptsA[i];
+        p2 = ptsA[(i+1)%4];
+        p3 = ptsA[(i+2)%4];
+        m = (p2.y-p1.y)/(p2.x-p1.x);
+        indicator = (p3.y-p1.y)-m*(p3.x-p1.x);
+        for(int j = 0 ; j<4 ; j++){
+            p4 = ptsB[j];
+            test_val = (p4.y-p1.y)-m*(p4.x-p1.x);
+            if(test_val*indicator<0){
+                encloses = false;
+                break;
+            }
+        }
+        if(!encloses) break;
+    }
+    return encloses;
 }
 
 bool Num_Extract::validate (Mat mask, Mat pre){
@@ -57,35 +57,35 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     cv::findContours(img, contour, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     for(int i = 0 ; i<contour.size();i++){
         if(contourArea( contour[i],false)>0.5*320*240)big = true;// If too close to object
-	}
+    }
     int count = 0;
 
     for(int i = 0 ; i<contour.size();i++){
         if(contourArea( contour[i],false)>1000) count++;
-	}
+    }
 
     if(count == 0 )return validate;//filter out random noise
     Mat grey,grey0,grey1,grey2,grey3;
     vector<Mat> bgr_planes;
     split(pre,bgr_planes);
 
-	std::vector<std::vector<cv::Point> > contour1;
-	std::vector<cv::Point> inner;
-	double area = 0;
+    std::vector<std::vector<cv::Point> > contour1;
+    std::vector<cv::Point> inner;
+    double area = 0;
     vector<int> valid_index ;
     vector<int> valid_test,bins_indices;
 
     for(int i = 0 ; i<contour.size();i++){
         if(contourArea( contour[i],false)>1000){
-			area = area + contourArea( contour[i],false);
+            area = area + contourArea( contour[i],false);
             valid_test.push_back(i);
-			for(int j = 0;j < contour[i].size();j++){
-				inner.push_back(contour[i][j]);
-			}
-		}
-	}
-	RotatedRect inrect = minAreaRect(Mat(inner));//bounding rectangle of bins (if detected)
-	RotatedRect outrect ;
+            for(int j = 0;j < contour[i].size();j++){
+                inner.push_back(contour[i][j]);
+            }
+        }
+    }
+    RotatedRect inrect = minAreaRect(Mat(inner));//bounding rectangle of bins (if detected)
+    RotatedRect outrect ;
     double thresh = 0;
     double threshf;
 
@@ -192,7 +192,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     int out_ind;
 
     vector<Rect> valid,valid1,boxes;//valid and valid1 are bounding rectangles after testing validity conditions
-                                    //boxes contains all bounding boxes
+    //boxes contains all bounding boxes
     vector<int> valid_index,valid_index1;
 
     for(int i = 0 ; i<masked.size() ; i++){
@@ -267,8 +267,8 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
         }
 
         warpAffine(grey1,grey0,rot_mat,grey0.size());//rotating to make the outer bin straight
-                                                     //grey1 is the grayscale image (unrotated)
-                                                     //after rotation stored in grey0
+        //grey1 is the grayscale image (unrotated)
+        //after rotation stored in grey0
         warpAffine(pre,rot_pre,rot_mat,rot_pre.size());//rotating the original (color) image by the same angle
         Canny(grey0,grey,0,256,5);//thresholding the rotated image (grey0)
 
@@ -346,8 +346,32 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
 
         Mat ext_number = rot_pre & final_mask;//applying final_mask onto rot_pre
 
+        Mat num_img = Mat::zeros(box.height,box.width,CV_8UC3);
+
         imshow("extracted no." , ext_number);
         waitKey(0);
+        int start_j,start_k;
+        bool found = false;
+        for(int j = 0 ; j<ext_number.rows ; j++){
+            for(int k = 0 ; k<ext_number.cols ; k++ ){
+                if(ext_number.at<Vec3b>(j,k)[0] != 0 || ext_number.at<Vec3b>(j,k)[1] != 0 || ext_number.at<Vec3b>(j,k)[2] != 0 ){
+                    start_j = j;
+                    start_k = k;
+                    found = true;
+                    break;
+                }
+                if(found){
+                    break;
+                }
+            }
+        }
+        for(int j = start_j ; j<start_j+box.height ; j++ ){
+            for(int k = start_k ; k<start_k+box.width ; k++){
+                for(int l = 0 ; l<3 ; l++){
+                    num_img.at<Vec3b>(j-start_j,k-start_k)[l] = ext_number.at<Vec3b>(j,k)[l];
+                }
+            }
+        }
 
         /*for(int j = 0 ; j<contour.size() ; j++){
             if(hierarchy[j][3]!=-1){
@@ -370,7 +394,11 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
         rectangle( box_mat, box , color ,  CV_FILLED );//drawing the rectangle on box_mat
         rot_pre.copyTo(drawing,box_mat);//applying mask (box_mat) onto rot_pre and saving on drawing*/
 
-        dst.push_back(ext_number);//building output list
+
+
+        dst.push_back(num_img);//building output list
+        imshow("only box" , num_img);
+        waitKey(0);
         boxes.clear();
         valid.clear();
         valid1.clear();
@@ -384,7 +412,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
 
 void Num_Extract::extract(Mat mask, Mat pre){
     bool valid = validate(mask,pre);
-	
+
     is_valid = valid;
     //bool valid = true;
 
@@ -963,34 +991,39 @@ vector<int> Num_Extract::AnalyseImage(KNearest knearest, CvSVM SVM, Mat _image)
     //_image = imread("./images/16.png", 1);
 
 
-    resize(_image,image,Size(2*sizex,1.2*sizey));
+    resize(_image,image,Size(2*sizex,sizey));
+    //image = _image;
     cvtColor(image, gray, COLOR_BGR2GRAY);
-    GaussianBlur(gray, blur, Size(5, 5), 2, 2);
-    adaptiveThreshold(blur, thresh, 255, 1, 1, 11, 2);
+    //GaussianBlur(gray, blur, Size(5, 5), 2, 2);
+    //blur = gray;
+    adaptiveThreshold(gray, thresh, 255, 1, 1, 11, 2);
     findContours(thresh, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
     float _maxBoxArea=0;
     for (size_t i = 0; i < contours.size(); i++)
     {
         Rect rec = boundingRect(contours[i]);
+        //cout << "rec height " <<rec.height<<  "  rec width "<<rec.width<<endl;
         if (_maxBoxArea < rec.height*rec.width)
         {
             _maxBoxArea = rec.height*rec.width;
         }
+
     }
+    cout<< " max area "<<_maxBoxArea<< endl;
 
     for (size_t i = 0; i < contours.size(); i++)
     {
         vector < Point > cnt = contours[i];
         Rect rec = boundingRect(cnt);
         float rec_area = rec.height*rec.width;
-        if (rec_area > 0.55*_maxBoxArea)
+        if (rec_area > 0.60*_maxBoxArea)
         {
             float aspectR = float(rec.height)/float(rec.width);
-            if ( aspectR > 1.4)
+            if ( aspectR > 1.0)
             {
                 Mat roi = image(rec);
-                Mat stagedImage;
+                Mat stagedImage;// = image(rec);
 
                 // Descriptor
                 resize(roi,stagedImage,Size(sizex,sizey));
@@ -1097,34 +1130,35 @@ void Num_Extract::run (Mat img){
 
         time=clock();
         vector<vector<int> > digits;
-		vector<int> digits1;
+        vector<int> digits1;
         
-		for(int i = 0 ; i<dst.size() ; i++){
-			digits1 = AnalyseImage(knearest, SVM, dst[i]);
-			digits.push_back(digits1);
-			digits1.clear();
-		}
+        for(int i = 0 ; i<dst.size() ; i++){
+            digits1 = AnalyseImage(knearest, SVM, dst[i]);
+            digits.push_back(digits1);
+            digits1.clear();
+        }
         int result_ml[digits.size()];
         time=clock()-time;
         float run_time=((float)time)/CLOCKS_PER_SEC;
         cout<<"Run Time "<<run_time<<"\n";
-		cout<<digits[0].size()<<endl;
-		for(int i = 0 ; i<digits.size() ; i++){
-			cout<< "digits of " <<i<<"th box are " << digits[i][0] <<" & "<<digits[i][1]<<"\n";
-			if (digits[i][0]==8 || digits[i][1]==8) result_ml[i] = 98;
-        	if (digits[i][0]==7 || digits[i][1]==7) result_ml[i] = 37;
-        	if (digits[i][0]==6 || digits[i][1]==6) result_ml[i] = 16;
-        	if (digits[i][0]==0 || digits[i][1]==0) result_ml[i] = 10;
-        
-		}
-		cout<<"result ";
-		for(int i = 0 ; i<digits.size() ; i++){
-			cout<<result_ml[i]<<endl;
-		}
+        cout<<"no. of bins "<<digits.size()<<endl;
+        cout<<digits[0].size()<<endl;
+        for(int i = 0 ; i<digits.size() ; i++){
+            cout<< "digits of " <<i<<"th box are " << digits[i][0] <<" & "<<digits[i][1]<<"\n";
+            if (digits[i][0]==8 || digits[i][1]==8) result_ml[i] = 98;
+            if (digits[i][0]==7 || digits[i][1]==7) result_ml[i] = 37;
+            if (digits[i][0]==6 || digits[i][1]==6) result_ml[i] = 16;
+            if (digits[i][0]==0 || digits[i][1]==0) result_ml[i] = 10;
+
+        }
+        cout<<"result ";
+        for(int i = 0 ; i<digits.size() ; i++){
+            cout<<result_ml[i]<<endl;
+        }
         
 
         // find no from detected digits
-      /* for (int i=0; i< print_nos.cols; i++) {
+        /* for (int i=0; i< print_nos.cols; i++) {
 
             if (digits[0]==print_dgt[i][0]) result_ml=print_nos[i];
             if (digits[0]==print_dgt[i][1]) result_ml=print_nos[i];
