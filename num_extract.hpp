@@ -26,6 +26,7 @@ private:
 	int HOG3_size;
 	char pathToImages[200];
 	bool temp_match;
+    int print_nos[4];
 
 protected:
 
@@ -33,7 +34,6 @@ protected:
     bool validate (Mat mask, Mat pre);
     void extract_Number(Mat pre , vector<Mat>src);
 	
-	void PreProcessImage(Mat *inImage,Mat *outImage,int sizex, int sizey);
 	void LearnFromImages(CvMat* trainData, CvMat* trainClasses);
 	void RunSelfTest(KNearest& knn2, CvSVM& SVM2);
 	vector<int> AnalyseImage(KNearest knearest, CvSVM SVM, Mat _image);

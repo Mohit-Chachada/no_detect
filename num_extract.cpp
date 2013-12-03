@@ -11,6 +11,11 @@ Num_Extract::Num_Extract(){
     sprintf(pathToImages,"%s","./images");
     temp_match=true;
     pi = 3.1416;
+
+    print_nos[0]= 10;
+    print_nos[1]= 16;
+    print_nos[2]= 37;
+    print_nos[3]= 98;
 }
 
 Num_Extract::~Num_Extract(){
@@ -771,7 +776,6 @@ void Num_Extract::HOG3(IplImage *Im,vector<float>& descriptors)
 
 vector<Mat> Num_Extract::HOGMatching_Template() {
 
-    int print_nos[]={10,16,37,98};
     vector<Mat> hist;
     hist.resize(4);
 
@@ -785,7 +789,7 @@ vector<Mat> Num_Extract::HOGMatching_Template() {
         }
 
         Mat outfile;
-        resize(temp,outfile,Size(100,80));
+        resize(temp,outfile,Size(2*sizex,sizey));
         IplImage copy = outfile;
         IplImage* img2 = &copy;
         vector<float> ders;
@@ -804,13 +808,13 @@ vector<Mat> Num_Extract::HOGMatching_Template() {
 }
 
 vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
-    int print_nos[]={10,16,37,98};
+
     Mat outfile;
     int matched_templ[4];
     vector<int> result;
 
     // test histogram
-    resize(test_img,outfile,Size(100,80));
+    resize(test_img,outfile,Size(2*sizex,sizey));
     imshow("test_img",outfile);
     waitKey(0);
     IplImage copy = outfile;
@@ -858,41 +862,6 @@ vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
     // result: no detected by all 4 methods
     //result=print_nos[matched_templ[3]];
     return result;
-}
-
-
-void Num_Extract::PreProcessImage(Mat *inImage,Mat *outImage,int sizex, int sizey)
-{
-    Mat grayImage,blurredImage,thresholdImage,contourImage,regionOfInterest;
-
-    vector<vector<Point> > contours;
-
-    cvtColor(*inImage,grayImage , COLOR_BGR2GRAY);
-
-    GaussianBlur(grayImage, blurredImage, Size(5, 5), 2, 2);
-    adaptiveThreshold(blurredImage, thresholdImage, 255, 1, 1, 11, 2);
-
-    thresholdImage.copyTo(contourImage);
-
-    findContours(contourImage, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
-
-    int idx = 0;
-    size_t area = 0;
-    for (size_t i = 0; i < contours.size(); i++)
-    {
-        if (area < contours[i].size() )
-        {
-            idx = i;
-            area = contours[i].size();
-        }
-    }
-
-    Rect rec = boundingRect(contours[idx]);
-
-    regionOfInterest = thresholdImage(rec);
-
-    resize(regionOfInterest,*outImage, Size(sizex, sizey));
-
 }
 
 
@@ -1084,8 +1053,6 @@ void Num_Extract::run (Mat img){
     extract(output,img);
 
     cout << dst.size()<<endl;
-
-    int print_nos[] = {10,16,37,98};
 
     if (!temp_match) {
 
