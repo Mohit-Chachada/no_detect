@@ -1,7 +1,7 @@
 #include "num_extract.hpp"
 
 Num_Extract::Num_Extract(){
-    classifier = 2;    // use 1 SVM
+    classifier = 1;    // use 1 SVM
     train_samples = 4;
     classes = 10;
     sizex = 20;
@@ -753,7 +753,7 @@ void Num_Extract::HOG3(IplImage *Im,vector<float>& descriptors)
             }
 
 
-            v_angles=0;
+            v_angles=0;\
             v_magnit=0;
             cvReleaseMat(&H2);
 
@@ -777,7 +777,7 @@ void Num_Extract::HOG3(IplImage *Im,vector<float>& descriptors)
 vector<Mat> Num_Extract::HOGMatching_Template() {
 
     vector<Mat> hist;
-    hist.resize(4);
+    hist.resize(4); // 4 templates
 
     for (int i=0;i<4;i++){
         stringstream ss;
@@ -827,8 +827,9 @@ vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
     {
         test_hist->data.fl[n] = ders.at(n);
     }
-    Mat test_hist2=test_hist;
-    float comparison [4][4];
+
+    Mat test_hist2 = test_hist;
+    float comparison [4][4]; // 4 templates x 4 methods
 
     for (int i=0;i<4;i++) {
         Mat temp_hist=hist[i];
