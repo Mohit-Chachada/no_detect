@@ -53,7 +53,7 @@ protected:
 	
 	void HOG3(IplImage *Im,vector<float>& descriptors);
 	
-	vector<Mat> HOGMatching_Template();
+    vector<Mat> HOGMatching_Template();
 
 	vector<int> HOGMatching_Compare(vector<Mat> hist, Mat test_img);
 
