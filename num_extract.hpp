@@ -36,7 +36,7 @@ protected:
 	
 	void LearnFromImages(CvMat* trainData, CvMat* trainClasses);
 	void RunSelfTest(KNearest& knn2, CvSVM& SVM2);
-	vector<int> AnalyseImage(KNearest knearest, CvSVM SVM, Mat _image);
+    vector<int> Classification(KNearest knearest, CvSVM SVM, Mat _image);
 	
 	float maximum(float x, float y, float z); 
 	
