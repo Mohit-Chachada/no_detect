@@ -1,7 +1,7 @@
 #include "num_extract.hpp"
 
 Num_Extract::Num_Extract(){
-    classifier = 1;    // use 1 SVM
+    classifier = 2;    // use 1 SVM
     train_samples = 4;
     classes = 10;
     sizex = 20;
