@@ -10,7 +10,7 @@ int main (int argc , char *argv[]){
     params.print_nos[1] = 16;
     params.print_nos[2] = 37;
     params.print_nos[3] = 98;
-    params.temp_match = true;
+    params.temp_match = false;
     params.train_samples = 4;
     Num_Extract Num1 = Num_Extract();
     Num1.setParams(params);

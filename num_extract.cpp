@@ -66,12 +66,12 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     //find contours from post color detection
     cv::findContours(img, contour, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     for(int i = 0 ; i<contour.size();i++){
-        if(contourArea( contour[i],false)>0.5*320*240)big = true;// If too close to object
+        if(contourArea( contour[i],false)>0.5*mask.rows*mask.cols)big = true;// If too close to object
     }
     int count = 0;
 
     for(int i = 0 ; i<contour.size();i++){
-        if(contourArea( contour[i],false)>1000) count++;
+        if(contourArea( contour[i],false)>0.013*mask.rows*mask.cols) count++;
     }
 
     if(count == 0 )return validate;//filter out random noise
@@ -86,7 +86,7 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     vector<int> valid_test,bins_indices;
 
     for(int i = 0 ; i<contour.size();i++){
-        if(contourArea( contour[i],false)>1000){
+        if(contourArea( contour[i],false)>0.013*mask.rows*mask.cols){
             area = area + contourArea( contour[i],false);
             valid_test.push_back(i);
             for(int j = 0;j < contour[i].size();j++){
@@ -125,7 +125,7 @@ bool Num_Extract::validate (Mat mask, Mat pre){
                 }
                 count2 = 0;
                 approxPolyDP(Mat(contour1[i]),poly,3,true);
-                if(contourArea(contour1[i],false)>1500){
+                if(contourArea(contour1[i],false)>1.5*0.013*mask.rows*mask.cols){
                     for(int j = 0 ; j < valid_test.size(); j++){
                         RotatedRect test = minAreaRect(Mat(contour[valid_test[j]]));
                         double area1 = contourArea(contour1[i],false);
@@ -169,7 +169,7 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     return validate;
 }
 
-void Num_Extract::extract_Number(Mat pre , vector<Mat>src ,bool flip ){
+void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
     Mat rot_pre;
 
     Scalar color = Scalar(255,255,255);
@@ -270,23 +270,12 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ,bool flip ){
         angle = angle * 180/3.14;
 
         cout << angle <<endl;
-        if(!flip){
-            if(angle<0){//building rotation matrices
-                rot_mat = getRotationMatrix2D(outrect.center,(-90-angle),1.0);
-            }
-            else{
-                rot_mat = getRotationMatrix2D(outrect.center,(90-angle),1.0);
-            }
+
+        if(angle<0){//building rotation matrices
+            rot_mat = getRotationMatrix2D(outrect.center,(-90-angle),1.0);
         }
-
         else{
-            if(angle<0){//building rotation matrices
-                rot_mat = getRotationMatrix2D(outrect.center,(-90-angle+180),1.0);
-            }
-            else{
-                rot_mat = getRotationMatrix2D(outrect.center,(90-angle+180),1.0);
-            }
-
+            rot_mat = getRotationMatrix2D(outrect.center,(90-angle),1.0);
         }
 
 
@@ -425,14 +414,16 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ,bool flip ){
     //cout<<valid1.size()<<endl;
 }
 
-void Num_Extract::extract(Mat mask, Mat pre , bool flip){
+void Num_Extract::extract(Mat mask, Mat pre){
     bool valid = validate(mask,pre);
 
     is_valid = valid;
     //bool valid = true;
 
-    vector<Mat> bins ;
+    vector<int> bins_ind ;
     std::vector<std::vector<cv::Point> > contour;
+    vector<Mat> bins;
+
     Mat img ;
     Mat test = Mat::zeros( pre.size(), CV_8UC3 );
     if(valid){
@@ -447,9 +438,10 @@ void Num_Extract::extract(Mat mask, Mat pre , bool flip){
 
         for(int i = 0 ; i<contour.size() ; i++){
             Mat img2 = Mat::zeros( img.size(), CV_8UC3 );
-            if(contourArea(contour[i],false)>1000){
+            if(contourArea(contour[i],false)>0.013*mask.rows*mask.cols){
                 drawContours(img2,contour,i,color,CV_FILLED);
                 bins.push_back(img2);
+                bins_ind.push_back(i);
             }
         }
         vector<Mat>masked;
@@ -457,27 +449,67 @@ void Num_Extract::extract(Mat mask, Mat pre , bool flip){
             Mat img = pre & bins[i];
             masked.push_back(img);
         }
-        extract_Number(pre,masked,flip);
+        RotatedRect boxes[bins_ind.size()];
+        for(int i = 0 ; i<bins_ind.size() ; i++){
+            boxes[i] = minAreaRect(Mat(contour[bins_ind[i]]));
+        }
+
+        Mat tmp;
+
+        if(masked.size()==2){
+            if(boxes[0].center.x>boxes[1].center.x){
+                tmp = masked[0];
+                masked[0] = masked[1];
+                masked[1] = tmp;
+            }
+        }
+
+        if(masked.size()>2){
+            for(int i = 0 ; i<bins_ind.size() ; i++){
+                for(int j = i+1 ; j<bins_ind.size() ; j++){
+                    if(boxes[j].center.y<boxes[i].center.y){
+                        tmp = masked[j];
+                        masked[j] = masked[i];
+                        masked[i] = tmp;
+                    }
+                }
+            }
+            if(boxes[0].center.x>boxes[1].center.x && (boxes[2].center.y-boxes[1].center.y)>(boxes[1].center.y-boxes[0].center.y)){
+                tmp = masked[0];
+                masked[0] = masked[1];
+                masked[1] = tmp;
+
+            }
+            if((boxes[2].center.y-boxes[1].center.y)<(boxes[1].center.y-boxes[0].center.y) && boxes[1].center.x>boxes[2].center.x){
+                tmp = masked[1];
+                masked[1] = masked[2];
+                masked[2] = tmp;
+            }
+            if(masked.size()==4){
+                if(boxes[0].center.x>boxes[1].center.x){
+                    tmp = masked[0];
+                    masked[0] = masked[1];
+                    masked[1] = tmp;
+                }
+                if(boxes[2].center.x>boxes[3].center.x){
+                    tmp = masked[2];
+                    masked[2] = masked[3];
+                    masked[3] = tmp;
+                }
+            }
+        }
+
+        extract_Number(pre,masked);
+
     }
+
 
     else {
         cout<<"not validated\n";
     }
-    /*
-    imshow("contour ext",test);
-    waitKey(0);
-    for(int i = 0 ; i<bins.size() ; i++){
-        imshow("contour sent1",bins[i]);
-        waitKey(0);
-    }
-    for(int i = 0 ; i<dst.size() ; i++){
-        imshow("numbers extracted",dst[i]);
-        waitKey(0);
-    }
 
-    */
 
-    //cout << dst.size()<<endl;
+
 }
 
 
@@ -1080,10 +1112,26 @@ void Num_Extract::run (Mat img){
     Mat output;
     inRange(img2 , lower , higher , output);
     
-    extract(output,img,false);
+    extract(output,img);
     cout<<" unflipped \n";
     cout << dst.size()<<endl;
 
+    Mat dst_flipped[dst.size()];
+
+    Mat rot_flip( 2, 3, CV_32FC1 );
+
+    for(int i = 0 ; i<dst.size() ; i++){
+
+        rot_flip = getRotationMatrix2D(Point2f(dst[i].cols/2,dst[i].rows/2),180,1.0);
+
+        warpAffine(dst[i],dst_flipped[i],rot_flip,dst[i].size());
+    }
+
+
+
+    KNearest knearest;
+    CvSVM SVM;
+
     if (!_temp_match) {
 
         // timer
@@ -1094,8 +1142,7 @@ void Num_Extract::run (Mat img){
 
         LearnFromImages(trainData, trainClasses);
 
-        KNearest knearest;
-        CvSVM SVM;
+
 
         switch (_classifier) {
         case 1:
@@ -1186,120 +1233,6 @@ void Num_Extract::run (Mat img){
             cout << endl;
         }
     }
-
-
-    dst.clear();
-
-
-    extract(output,img,true); //FLIPPING
-    cout<<" flipped \n";
-
-
-    cout << dst.size()<<endl;
-
-    if (!_temp_match) {
-
-        // timer
-        clock_t time=clock();
-
-        CvMat* trainData = cvCreateMat(_classes * _train_samples, HOG3_size, CV_32FC1);
-        CvMat* trainClasses = cvCreateMat(_classes * _train_samples, 1, CV_32FC1);
-
-        LearnFromImages(trainData, trainClasses);
-
-        KNearest knearest;
-        CvSVM SVM;
-
-        switch (_classifier) {
-        case 1:
-        {
-            // Set up SVM's parameters
-            CvSVMParams params;
-            params.svm_type    = CvSVM::C_SVC;
-            params.kernel_type = CvSVM::LINEAR;
-            params.term_crit   = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
-
-            // Train the SVM
-            SVM.train(trainData, trainClasses, Mat(), Mat(), params);
-            SVM.save("SVM_training_data");
-            break;
-        }
-        case 2:
-        {
-            knearest.train(trainData, trainClasses);
-            break;
-        }
-        }
-
-        time=clock()-time;
-        float training_time=((float)time)/CLOCKS_PER_SEC;
-        cout<<"Training Time "<<training_time<<"\n";
-
-        //RunSelfTest(knearest, SVM);
-        cout << "Testing\n";
-
-        time=clock();
-        vector<vector<int> > digits;
-        vector<int> digits1;
-        cout<< "dst size "<<dst.size()<<endl;
-        for(int i = 0 ; i<dst.size() ; i++){
-            digits1 = AnalyseImage(knearest, SVM, dst[i]);
-            digits.push_back(digits1);
-            digits1.clear();
-        }
-        int result_ml[digits.size()];
-        time=clock()-time;
-        float run_time=((float)time)/CLOCKS_PER_SEC;
-        cout<<"Run Time "<<run_time<<"\n";
-        cout<<"no. of bins "<<digits.size()<<endl;
-        //cout<<digits[0].size()<<endl;
-        for(int i = 0 ; i<digits.size() ; i++){
-            cout<< "digits of " <<i<<"th box are " << digits[i][0] <<" & "<<digits[i][1]<<"\n";
-            if (digits[i][0]==8 || digits[i][1]==8) result_ml[i] = 98;
-            if (digits[i][0]==7 || digits[i][1]==7) result_ml[i] = 37;
-            if (digits[i][0]==6 || digits[i][1]==6) result_ml[i] = 16;
-            if (digits[i][0]==0 || digits[i][1]==0) result_ml[i] = 10;
-
-        }
-        cout<<"result ";
-        for(int i = 0 ; i<digits.size() ; i++){
-            cout<<result_ml[i]<<endl;
-        }
-
-
-
-
-        // find no from detected digits
-        /* for (int i=0; i< _print_nos.cols; i++) {
-
-            if (digits[0]==print_dgt[i][0]) result_ml=_print_nos[i];
-            if (digits[0]==print_dgt[i][1]) result_ml=_print_nos[i];
-            if (digits[1]==print_dgt[i][0]) result_ml=_print_nos[i];
-            if (digits[1]==print_dgt[i][1]) result_ml=_print_nos[i];
-        }
-      */
-
-    }
-    else {
-        vector<Mat> hist;
-        vector<vector<int> > result_hogm; // result of all 4 matching methods
-        vector<int> result;
-        //Mat test_img=imread((string)(pathToImages)+"/"+"16.png");
-        // Template Histograms
-        hist = HOGMatching_Template();
-        // Compare Histogram
-        for(int i = 0 ; i<dst.size() ; i++){
-            result = HOGMatching_Compare(hist,dst[i]);
-            result_hogm.push_back(result);
-        }
-        for(int i = 0 ; i<result_hogm.size() ; i++ ){
-            for(int j = 0 ; j<result_hogm[i].size() ; j++){
-                cout << result_hogm[i][j]<<'\t';
-            }
-            cout << endl;
-        }
-    }
-
 
 
 
