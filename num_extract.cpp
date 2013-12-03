@@ -1,21 +1,26 @@
 #include "num_extract.hpp"
 
 Num_Extract::Num_Extract(){
-    classifier = 2;    // use 1 SVM
-    train_samples = 4;
-    classes = 10;
+
+}
+
+void Num_Extract::setParams(InParams params){
+    _classifier = params.classifier;    // use 1 SVM
+    _train_samples = params.train_samples;
+    _classes = params.classes;
     sizex = 20;
     sizey = 35;
     ImageSize = sizex * sizey;
     HOG3_size=81;
-    sprintf(pathToImages,"%s","./images");
-    temp_match=false;
+    sprintf(_pathToImages,"%s",params.pathToImages);
+    //_temp_match=true;
+    _temp_match=params.temp_match;
     pi = 3.1416;
 
-    print_nos[0]= 10;
-    print_nos[1]= 16;
-    print_nos[2]= 37;
-    print_nos[3]= 98;
+    _print_nos[0]= params.print_nos[0];
+    _print_nos[1]= params.print_nos[1];
+    _print_nos[2]= params.print_nos[2];
+    _print_nos[3]= params.print_nos[3];
 }
 
 Num_Extract::~Num_Extract(){
@@ -164,7 +169,7 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     return validate;
 }
 
-void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
+void Num_Extract::extract_Number(Mat pre , vector<Mat>src ,bool flip ){
     Mat rot_pre;
 
     Scalar color = Scalar(255,255,255);
@@ -182,9 +187,11 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
           waitKey(0);
       }*/
 
-    Mat grey,grey0,grey1;
+    Mat grey,grey0,grey1,grey2,grey3;
 
-    //vector<Mat> bgr_planes;
+    vector<Mat> bgr_planes;
+
+    Mat bgr_planes1[3];
 
     vector<Vec4i> hierarchy;
 
@@ -201,18 +208,18 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     vector<int> valid_index,valid_index1;
 
     for(int i = 0 ; i<masked.size() ; i++){
-        //split(masked[i],bgr_planes);
+        split(masked[i],bgr_planes);
 
-        cvtColor(masked[i],grey1,CV_BGR2GRAY);
+        //cvtColor(masked[i],grey1,CV_BGR2GRAY);
 
-        Canny(grey1,grey,0,256,5);
+        //Canny(grey1,grey,0,256,5);
 
-        /*Canny(bgr_planes[0],grey1,0,256,5);
+        Canny(bgr_planes[0],grey1,0,256,5);
         Canny(bgr_planes[1],grey2,0,256,5);
         Canny(bgr_planes[2],grey3,0,256,5);
         max(grey1,grey2,grey1);
-        max(grey1,grey3,grey);
-        max(grey,grey5,grey);//getting strongest edges*/
+        max(grey1,grey3,grey);//getting strongest edges
+        //max(grey,grey5,grey);
 
         dilate(grey , grey0 , Mat() , Point(-1,-1));
 
@@ -263,19 +270,44 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
         angle = angle * 180/3.14;
 
         cout << angle <<endl;
-
-        if(angle<0){//building rotation matrices
-            rot_mat = getRotationMatrix2D(outrect.center,(-90-angle),1.0);
+        if(!flip){
+            if(angle<0){//building rotation matrices
+                rot_mat = getRotationMatrix2D(outrect.center,(-90-angle),1.0);
+            }
+            else{
+                rot_mat = getRotationMatrix2D(outrect.center,(90-angle),1.0);
+            }
         }
+
         else{
-            rot_mat = getRotationMatrix2D(outrect.center,(90-angle),1.0);
+            if(angle<0){//building rotation matrices
+                rot_mat = getRotationMatrix2D(outrect.center,(-90-angle+180),1.0);
+            }
+            else{
+                rot_mat = getRotationMatrix2D(outrect.center,(90-angle+180),1.0);
+            }
+
         }
 
-        warpAffine(grey1,grey0,rot_mat,grey0.size());//rotating to make the outer bin straight
-        //grey1 is the grayscale image (unrotated)
-        //after rotation stored in grey0
+
+
+
+        //warpAffine(grey1,grey0,rot_mat,grey0.size());
+
+        warpAffine(bgr_planes[0],bgr_planes1[0],rot_mat,grey0.size());//rotating to make the outer bin straight
+        warpAffine(bgr_planes[1],bgr_planes1[1],rot_mat,grey0.size());
+        warpAffine(bgr_planes[2],bgr_planes1[2],rot_mat,grey0.size());
+
+
         warpAffine(pre,rot_pre,rot_mat,rot_pre.size());//rotating the original (color) image by the same angle
-        Canny(grey0,grey,0,256,5);//thresholding the rotated image (grey0)
+
+
+        Canny(bgr_planes1[0],grey1,0,256,3);//thresholding the rotated image
+        Canny(bgr_planes1[1],grey2,0,256,3);
+        Canny(bgr_planes1[2],grey3,0,256,3);
+
+        max(grey1,grey2,grey1);
+        max(grey1,grey3,grey);//getting the stongest edges
 
         cv::findContours(grey, contour,hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 
@@ -378,28 +410,6 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
             }
         }
 
-        /*for(int j = 0 ; j<contour.size() ; j++){
-            if(hierarchy[j][3]!=-1){
-                valid.push_back(boundingRect(Mat(contour[j])));
-            }
-        }
-        for(int j = 0 ; j<valid.size() ; j++){
-            double aspect = valid[j].width/valid[j].height;
-            if(aspect < 1.5){//removing others on the basis of aspect ratio
-                valid1.push_back(valid[j]);//forming the list of valid bounding boxes
-            }
-        }
-        Rect box = valid1[0];
-        for(int j = 1 ; j<valid1.size() ; j++){
-            box = box | valid1[j];
-        }
-        Mat box_mat = Mat::zeros(rot_pre.size(),CV_8UC3);
-        Mat drawing = Mat::zeros(rot_pre.size(),CV_8UC3);
-
-        rectangle( box_mat, box , color ,  CV_FILLED );//drawing the rectangle on box_mat
-        rot_pre.copyTo(drawing,box_mat);//applying mask (box_mat) onto rot_pre and saving on drawing*/
-
-
 
         dst.push_back(num_img);//building output list
         imshow("only box" , num_img);
@@ -415,7 +425,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     //cout<<valid1.size()<<endl;
 }
 
-void Num_Extract::extract(Mat mask, Mat pre){
+void Num_Extract::extract(Mat mask, Mat pre , bool flip){
     bool valid = validate(mask,pre);
 
     is_valid = valid;
@@ -447,7 +457,7 @@ void Num_Extract::extract(Mat mask, Mat pre){
             Mat img = pre & bins[i];
             masked.push_back(img);
         }
-        extract_Number(pre,masked);
+        extract_Number(pre,masked,flip);
     }
 
     else {
@@ -781,9 +791,9 @@ vector<Mat> Num_Extract::HOGMatching_Template() {
 
     for (int i=0;i<nr_templ;i++){
         stringstream ss;
-        ss << print_nos[i];
+        ss << _print_nos[i];
         string s_no = ss.str();
-        Mat temp=imread((string)(pathToImages)+"/"+s_no+".png");
+        Mat temp=imread((string)(_pathToImages)+"/"+s_no+".png");
         if(temp.empty()){
             cout<<"empty image\n";
         }
@@ -858,12 +868,12 @@ vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
                 if (_maxm==comparison[k][j]) matched_templ[j]=k;
             }
         }
-        result.push_back(print_nos[matched_templ[j]]);
+        result.push_back(_print_nos[matched_templ[j]]);
     }
     cout<<matched_templ[0]<<"\t"<<matched_templ[1]<<"\t"<<matched_templ[2]<<"\t"<<matched_templ[3]<<"\n";
 
     // result: no detected by all 4 methods
-    //result=print_nos[matched_templ[3]];
+    //result=_print_nos[matched_templ[3]];
     return result;
 }
 
@@ -872,11 +882,11 @@ void Num_Extract::LearnFromImages(CvMat* trainData, CvMat* trainClasses)
 {
     Mat img,outfile;
     char file[255];
-    for (int i = 0; i < classes; i++)
+    for (int i = 0; i < _classes; i++)
     {
-        for (int j=0; j < train_samples;j++)
+        for (int j=0; j < _train_samples;j++)
         {
-            sprintf(file, "%s/%d/%d.png", pathToImages, i, j);
+            sprintf(file, "%s/%d/%d.png", _pathToImages, i, j);
             img = imread(file, 1);
             if (!img.data)
             {
@@ -891,10 +901,10 @@ void Num_Extract::LearnFromImages(CvMat* trainData, CvMat* trainClasses)
             HOG3(img2,ders);
             for (int n = 0; n < ders.size(); n++)
             {
-                trainData->data.fl[i*train_samples*ders.size()+ j * ders.size() + n] = ders.at(n);
+                trainData->data.fl[i*_train_samples*ders.size()+ j * ders.size() + n] = ders.at(n);
             }
 
-            trainClasses->data.fl[i*train_samples+j] = i;
+            trainClasses->data.fl[i*_train_samples+j] = i;
         }
     }
 
@@ -909,8 +919,8 @@ void Num_Extract::RunSelfTest(KNearest& knn2, CvSVM& SVM2)
     int z = 0;
     while (z++ < 10)
     {
-        int iSecret = rand() % classes;
-        sprintf(file, "%s/%d/%d.png", pathToImages, iSecret, rand()%train_samples);
+        int iSecret = rand() % _classes;
+        sprintf(file, "%s/%d/%d.png", _pathToImages, iSecret, rand()%_train_samples);
         img = imread(file, 1);
         Mat stagedImage;
 
@@ -926,7 +936,7 @@ void Num_Extract::RunSelfTest(KNearest& knn2, CvSVM& SVM2)
         }
 
         float detectedClass;
-        switch (classifier) {
+        switch (_classifier) {
         case 1:
         {
             detectedClass = SVM2.predict(sample2);
@@ -964,12 +974,31 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
 
 
     resize(_image,image,Size(2*sizex,sizey));
+
     //image = _image;
-    cvtColor(image, gray, COLOR_BGR2GRAY);
+    //cvtColor(image, gray, COLOR_BGR2GRAY);
     //GaussianBlur(gray, blur, Size(5, 5), 2, 2);
     //blur = gray;
-    adaptiveThreshold(gray, thresh, 255, 1, 1, 11, 2);
-    findContours(thresh, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+    //adaptiveThreshold(gray, thresh, 255, 1, 1, 11, 2);
+
+    vector<Mat> bgr_planes ;
+
+    split(image,bgr_planes);
+
+    Mat greyb,greyg,greyr,grey,grey0;
+
+    Canny(bgr_planes[0],greyb,0,256,3);
+    Canny(bgr_planes[1],greyg,0,256,3);
+    Canny(bgr_planes[2],greyr,0,256,3);
+    max(greyb,greyg,greyb);
+    max(greyb,greyr,grey);//getting strongest edges
+    //max(grey,grey5,grey);
+
+    dilate(grey , grey0 , Mat() , Point(-1,-1));
+
+    grey = grey0;
+
+    findContours(grey, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
     float _maxBoxArea=0;
     for (size_t i = 0; i < contours.size(); i++)
@@ -1009,9 +1038,9 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
                     sample2->data.fl[n] = ders.at(n);
                 }
 
-                // Classifier
+                // _classifier
                 float result;
-                switch (classifier) {
+                switch (_classifier) {
                 case 1:
                 {
                     result = SVM.predict(sample2);
@@ -1053,24 +1082,24 @@ void Num_Extract::run (Mat img){
     Mat output;
     inRange(img2 , lower , higher , output);
     
-    extract(output,img);
-
+    extract(output,img,false);
+    cout<<" unflipped \n";
     cout << dst.size()<<endl;
 
-    if (!temp_match) {
+    if (!_temp_match) {
 
         // timer
         clock_t time=clock();
 
-        CvMat* trainData = cvCreateMat(classes * train_samples, HOG3_size, CV_32FC1);
-        CvMat* trainClasses = cvCreateMat(classes * train_samples, 1, CV_32FC1);
+        CvMat* trainData = cvCreateMat(_classes * _train_samples, HOG3_size, CV_32FC1);
+        CvMat* trainClasses = cvCreateMat(_classes * _train_samples, 1, CV_32FC1);
 
         LearnFromImages(trainData, trainClasses);
 
         KNearest knearest;
         CvSVM SVM;
 
-        switch (classifier) {
+        switch (_classifier) {
         case 1:
         {
             // Set up SVM's parameters
@@ -1101,7 +1130,7 @@ void Num_Extract::run (Mat img){
         time=clock();
         vector<vector<int> > digits;
         vector<int> digits1;
-        
+        cout<< "dst size "<<dst.size()<<endl;
         for(int i = 0 ; i<dst.size() ; i++){
             digits1 = Classification(knearest, SVM, dst[i]);
             digits.push_back(digits1);
@@ -1112,7 +1141,7 @@ void Num_Extract::run (Mat img){
         float run_time=((float)time)/CLOCKS_PER_SEC;
         cout<<"Run Time "<<run_time<<"\n";
         cout<<"no. of bins "<<digits.size()<<endl;
-        cout<<digits[0].size()<<endl;
+        //cout<<digits[0].size()<<endl;
         for(int i = 0 ; i<digits.size() ; i++){
             cout<< "digits of " <<i<<"th box are " << digits[i][0] <<" & "<<digits[i][1]<<"\n";
             if (digits[i][0]==8 || digits[i][1]==8) result_ml[i] = 98;
@@ -1125,15 +1154,17 @@ void Num_Extract::run (Mat img){
         for(int i = 0 ; i<digits.size() ; i++){
             cout<<result_ml[i]<<endl;
         }
+
+
         
 
         // find no from detected digits
-        /* for (int i=0; i< print_nos.cols; i++) {
+        /* for (int i=0; i< _print_nos.cols; i++) {
 
-            if (digits[0]==print_dgt[i][0]) result_ml=print_nos[i];
-            if (digits[0]==print_dgt[i][1]) result_ml=print_nos[i];
-            if (digits[1]==print_dgt[i][0]) result_ml=print_nos[i];
-            if (digits[1]==print_dgt[i][1]) result_ml=print_nos[i];
+            if (digits[0]==print_dgt[i][0]) result_ml=_print_nos[i];
+            if (digits[0]==print_dgt[i][1]) result_ml=_print_nos[i];
+            if (digits[1]==print_dgt[i][0]) result_ml=_print_nos[i];
+            if (digits[1]==print_dgt[i][1]) result_ml=_print_nos[i];
         }
       */
         
@@ -1157,6 +1188,123 @@ void Num_Extract::run (Mat img){
             cout << endl;
         }
     }
+
+
+    dst.clear();
+
+
+    extract(output,img,true); //FLIPPING
+    cout<<" flipped \n";
+
+
+    cout << dst.size()<<endl;
+
+    if (!_temp_match) {
+
+        // timer
+        clock_t time=clock();
+
+        CvMat* trainData = cvCreateMat(_classes * _train_samples, HOG3_size, CV_32FC1);
+        CvMat* trainClasses = cvCreateMat(_classes * _train_samples, 1, CV_32FC1);
+
+        LearnFromImages(trainData, trainClasses);
+
+        KNearest knearest;
+        CvSVM SVM;
+
+        switch (_classifier) {
+        case 1:
+        {
+            // Set up SVM's parameters
+            CvSVMParams params;
+            params.svm_type    = CvSVM::C_SVC;
+            params.kernel_type = CvSVM::LINEAR;
+            params.term_crit   = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
+
+            // Train the SVM
+            SVM.train(trainData, trainClasses, Mat(), Mat(), params);
+            SVM.save("SVM_training_data");
+            break;
+        }
+        case 2:
+        {
+            knearest.train(trainData, trainClasses);
+            break;
+        }
+        }
+
+        time=clock()-time;
+        float training_time=((float)time)/CLOCKS_PER_SEC;
+        cout<<"Training Time "<<training_time<<"\n";
+
+        //RunSelfTest(knearest, SVM);
+        cout << "Testing\n";
+
+        time=clock();
+        vector<vector<int> > digits;
+        vector<int> digits1;
+        cout<< "dst size "<<dst.size()<<endl;
+        for(int i = 0 ; i<dst.size() ; i++){
+            digits1 = Classification(knearest, SVM, dst[i]);
+            digits.push_back(digits1);
+            digits1.clear();
+        }
+        int result_ml[digits.size()];
+        time=clock()-time;
+        float run_time=((float)time)/CLOCKS_PER_SEC;
+        cout<<"Run Time "<<run_time<<"\n";
+        cout<<"no. of bins "<<digits.size()<<endl;
+        //cout<<digits[0].size()<<endl;
+        for(int i = 0 ; i<digits.size() ; i++){
+            cout<< "digits of " <<i<<"th box are " << digits[i][0] <<" & "<<digits[i][1]<<"\n";
+            if (digits[i][0]==8 || digits[i][1]==8) result_ml[i] = 98;
+            if (digits[i][0]==7 || digits[i][1]==7) result_ml[i] = 37;
+            if (digits[i][0]==6 || digits[i][1]==6) result_ml[i] = 16;
+            if (digits[i][0]==0 || digits[i][1]==0) result_ml[i] = 10;
+
+        }
+        cout<<"result ";
+        for(int i = 0 ; i<digits.size() ; i++){
+            cout<<result_ml[i]<<endl;
+        }
+
+
+
+
+        // find no from detected digits
+        /* for (int i=0; i< _print_nos.cols; i++) {
+
+            if (digits[0]==print_dgt[i][0]) result_ml=_print_nos[i];
+            if (digits[0]==print_dgt[i][1]) result_ml=_print_nos[i];
+            if (digits[1]==print_dgt[i][0]) result_ml=_print_nos[i];
+            if (digits[1]==print_dgt[i][1]) result_ml=_print_nos[i];
+        }
+      */
+
+    }
+    else {
+        vector<Mat> hist;
+        vector<vector<int> > result_hogm; // result of all 4 matching methods
+        vector<int> result;
+        //Mat test_img=imread((string)(pathToImages)+"/"+"16.png");
+        // Template Histograms
+        hist = HOGMatching_Template();
+        // Compare Histogram
+        for(int i = 0 ; i<dst.size() ; i++){
+            result = HOGMatching_Compare(hist,dst[i]);
+            result_hogm.push_back(result);
+        }
+        for(int i = 0 ; i<result_hogm.size() ; i++ ){
+            for(int j = 0 ; j<result_hogm[i].size() ; j++){
+                cout << result_hogm[i][j]<<'\t';
+            }
+            cout << endl;
+        }
+    }
+
+
+
+
 
     waitKey(0);
 }
