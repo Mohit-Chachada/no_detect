@@ -15,12 +15,12 @@ using namespace cv;
 using namespace std;
 
 struct InParams{
-    int _classifier;    // use 1 SVM
-    int _train_samples;
-    int _classes;
-    char _pathToImages[200];
-    bool _temp_match;
-    int _print_nos[4];
+    int classifier;    // use 1 SVM
+    int train_samples;
+    int classes;
+    char pathToImages[200];
+    bool temp_match;
+    int print_nos[4];
 };
 
 class Num_Extract
@@ -28,22 +28,22 @@ class Num_Extract
 private:
 
 
-	int classifier;    // use 1 SVM
-	int train_samples;
-	int classes;
+    int _classifier;    // use 1 SVM
+    int _train_samples;
+    int _classes;
 	int sizex ;
 	int sizey ;
 	int ImageSize ;
 	int HOG3_size;
-    char pathToImages[200];
-	bool temp_match;
-    int print_nos[4];
+    char _pathToImages[200];
+    bool _temp_match;
+    int _print_nos[4];
 
 protected:
 
     bool A_encloses_B(RotatedRect A, RotatedRect B);
     bool validate (Mat mask, Mat pre);
-    void extract_Number(Mat pre , vector<Mat>src);
+    void extract_Number(Mat pre , vector<Mat>src , bool flip);
 	
 	void LearnFromImages(CvMat* trainData, CvMat* trainClasses);
 	void RunSelfTest(KNearest& knn2, CvSVM& SVM2);
@@ -57,7 +57,7 @@ protected:
 
 	vector<int> HOGMatching_Compare(vector<Mat> hist, Mat test_img);
 
-	void extract(Mat mask, Mat pre);
+    void extract(Mat mask, Mat pre, bool flip);
 	
 
 	
