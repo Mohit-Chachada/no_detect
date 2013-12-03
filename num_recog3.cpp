@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <time.h>
+//#include "svm.h"
 
 using namespace cv;
 using namespace std;
@@ -466,10 +467,11 @@ int main(int argc, char** argv)
             params.svm_type    = CvSVM::C_SVC;
             params.kernel_type = CvSVM::LINEAR;
             params.term_crit   = cvTermCriteria(CV_TERMCRIT_ITER, 100, 1e-6);
+            const CvMat *varIdx=0; const CvMat *sampleIdx=0;
 
             // Train the SVM
-            SVM.train(trainData, trainClasses, Mat(), Mat(), params);
-            SVM.save("SVM_training_data");
+            SVM.train(trainData, trainClasses,varIdx,sampleIdx, params);
+            //SVM.save("SVM_training_data");
             break;
         }
         case 2:
@@ -493,7 +495,7 @@ int main(int argc, char** argv)
         time=clock()-time;
         float run_time=((float)time)/CLOCKS_PER_SEC;
         cout<<"Run Time "<<run_time<<"\n";
-        cout<< "digits are " << digits[0] <<" & "<<digits[1]<<"\n";
+       // cout<< "digits are " << digits[0] <<" & "<<digits[1]<<"\n";
 
         // find no from detected digits
       /* for (int i=0; i< print_nos.cols; i++) {
@@ -508,7 +510,7 @@ int main(int argc, char** argv)
         if (digits[0]==7 || digits[1]==7) result_ml=37;
         if (digits[0]==6 || digits[1]==6) result_ml=16;
         if (digits[0]==0 || digits[1]==0) result_ml=10;
-        cout<<"Result_ml "<<result_ml<<endl;
+       // cout<<"Result_ml "<<result_ml<<endl;
     }
     else {
         vector<Mat> hist;
