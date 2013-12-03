@@ -14,9 +14,20 @@
 using namespace cv;
 using namespace std;
 
+struct InParams{
+    int _classifier;    // use 1 SVM
+    int _train_samples;
+    int _classes;
+    char _pathToImages[200];
+    bool _temp_match;
+    int _print_nos[4];
+};
+
 class Num_Extract
 {
 private:
+
+
 	int classifier;    // use 1 SVM
 	int train_samples;
 	int classes;
@@ -24,7 +35,7 @@ private:
 	int sizey ;
 	int ImageSize ;
 	int HOG3_size;
-	char pathToImages[200];
+    char pathToImages[200];
 	bool temp_match;
     int print_nos[4];
 
@@ -51,8 +62,10 @@ protected:
 
 	
 public:
-	Num_Extract();
+
+    Num_Extract();
 	~Num_Extract();
+    void setParams(InParams params);
 	double pi;
     
 	void run (Mat img);
@@ -61,4 +74,5 @@ public:
         bool is_valid ;
 
 };
+
 #endif

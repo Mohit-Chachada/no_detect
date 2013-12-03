@@ -1,21 +1,26 @@
 #include "num_extract.hpp"
 
 Num_Extract::Num_Extract(){
-    classifier = 1;    // use 1 SVM
-    train_samples = 4;
-    classes = 10;
+
+}
+
+void Num_Extract::setParams(InParams params){
+    classifier = params._classifier;    // use 1 SVM
+    train_samples = params._train_samples;
+    classes = params._classes;
     sizex = 20;
     sizey = 35;
     ImageSize = sizex * sizey;
     HOG3_size=81;
-    sprintf(pathToImages,"%s","./images");
-    temp_match=true;
+    sprintf(pathToImages,"%s",params._pathToImages);
+    //temp_match=true;
+    temp_match=params._temp_match;
     pi = 3.1416;
 
-    print_nos[0]= 10;
-    print_nos[1]= 16;
-    print_nos[2]= 37;
-    print_nos[3]= 98;
+    print_nos[0]= params._print_nos[0];
+    print_nos[1]= params._print_nos[1];
+    print_nos[2]= params._print_nos[2];
+    print_nos[3]= params._print_nos[3];
 }
 
 Num_Extract::~Num_Extract(){
@@ -182,9 +187,11 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
           waitKey(0);
       }*/
 
-    Mat grey,grey0,grey1;
+    Mat grey,grey0,grey1,grey2,grey3;
 
-    //vector<Mat> bgr_planes;
+    vector<Mat> bgr_planes;
+
+    Mat bgr_planes1[3];
 
     vector<Vec4i> hierarchy;
 
@@ -201,18 +208,18 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     vector<int> valid_index,valid_index1;
 
     for(int i = 0 ; i<masked.size() ; i++){
-        //split(masked[i],bgr_planes);
+        split(masked[i],bgr_planes);
 
-        cvtColor(masked[i],grey1,CV_BGR2GRAY);
+        //cvtColor(masked[i],grey1,CV_BGR2GRAY);
 
-        Canny(grey1,grey,0,256,5);
+        //Canny(grey1,grey,0,256,5);
 
-        /*Canny(bgr_planes[0],grey1,0,256,5);
+        Canny(bgr_planes[0],grey1,0,256,5);
         Canny(bgr_planes[1],grey2,0,256,5);
         Canny(bgr_planes[2],grey3,0,256,5);
         max(grey1,grey2,grey1);
-        max(grey1,grey3,grey);
-        max(grey,grey5,grey);//getting strongest edges*/
+        max(grey1,grey3,grey);//getting strongest edges
+        //max(grey,grey5,grey);
 
         dilate(grey , grey0 , Mat() , Point(-1,-1));
 
@@ -271,11 +278,23 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
             rot_mat = getRotationMatrix2D(outrect.center,(90-angle),1.0);
         }
 
-        warpAffine(grey1,grey0,rot_mat,grey0.size());//rotating to make the outer bin straight
-        //grey1 is the grayscale image (unrotated)
-        //after rotation stored in grey0
+
+        //warpAffine(grey1,grey0,rot_mat,grey0.size());
+
+        warpAffine(bgr_planes[0],bgr_planes1[0],rot_mat,grey0.size());//rotating to make the outer bin straight
+        warpAffine(bgr_planes[1],bgr_planes1[1],rot_mat,grey0.size());
+        warpAffine(bgr_planes[2],bgr_planes1[2],rot_mat,grey0.size());
+
+
         warpAffine(pre,rot_pre,rot_mat,rot_pre.size());//rotating the original (color) image by the same angle
-        Canny(grey0,grey,0,256,5);//thresholding the rotated image (grey0)
+
+
+        Canny(bgr_planes1[0],grey1,0,256,3);//thresholding the rotated image
+        Canny(bgr_planes1[1],grey2,0,256,3);
+        Canny(bgr_planes1[2],grey3,0,256,3);
+
+        max(grey1,grey2,grey1);
+        max(grey1,grey3,grey);//getting the stongest edges
 
         cv::findContours(grey, contour,hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 
@@ -961,12 +980,31 @@ vector<int> Num_Extract::AnalyseImage(KNearest knearest, CvSVM SVM, Mat _image)
 
 
     resize(_image,image,Size(2*sizex,sizey));
+
     //image = _image;
-    cvtColor(image, gray, COLOR_BGR2GRAY);
+    //cvtColor(image, gray, COLOR_BGR2GRAY);
     //GaussianBlur(gray, blur, Size(5, 5), 2, 2);
     //blur = gray;
-    adaptiveThreshold(gray, thresh, 255, 1, 1, 11, 2);
-    findContours(thresh, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+    //adaptiveThreshold(gray, thresh, 255, 1, 1, 11, 2);
+
+    vector<Mat> bgr_planes ;
+
+    split(image,bgr_planes);
+
+    Mat greyb,greyg,greyr,grey,grey0;
+
+    Canny(bgr_planes[0],greyb,0,256,3);
+    Canny(bgr_planes[1],greyg,0,256,3);
+    Canny(bgr_planes[2],greyr,0,256,3);
+    max(greyb,greyg,greyb);
+    max(greyb,greyr,grey);//getting strongest edges
+    //max(grey,grey5,grey);
+
+    dilate(grey , grey0 , Mat() , Point(-1,-1));
+
+    grey = grey0;
+
+    findContours(grey, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
     float _maxBoxArea=0;
     for (size_t i = 0; i < contours.size(); i++)
@@ -1098,7 +1136,7 @@ void Num_Extract::run (Mat img){
         time=clock();
         vector<vector<int> > digits;
         vector<int> digits1;
-        
+        cout<< "dst size "<<dst.size()<<endl;
         for(int i = 0 ; i<dst.size() ; i++){
             digits1 = AnalyseImage(knearest, SVM, dst[i]);
             digits.push_back(digits1);
