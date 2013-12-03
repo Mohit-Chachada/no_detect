@@ -9,7 +9,7 @@ Num_Extract::Num_Extract(){
     ImageSize = sizex * sizey;
     HOG3_size=81;
     sprintf(pathToImages,"%s","./images");
-    temp_match=false;
+    temp_match=true;
     pi = 3.1416;
 
     print_nos[0]= 10;
@@ -1138,12 +1138,22 @@ void Num_Extract::run (Mat img){
     }
     else {
         vector<Mat> hist;
-        vector<int> result_hogm; // result of all 4 matching methods
-        Mat test_img=imread((string)(pathToImages)+"/"+"16.png");
+        vector<vector<int> > result_hogm; // result of all 4 matching methods
+        vector<int> result;
+        //Mat test_img=imread((string)(pathToImages)+"/"+"16.png");
         // Template Histograms
         hist = HOGMatching_Template();
         // Compare Histogram
-        result_hogm = HOGMatching_Compare(hist,test_img);
+        for(int i = 0 ; i<dst.size() ; i++){
+            result = HOGMatching_Compare(hist,dst[i]);
+            result_hogm.push_back(result);
+        }
+        for(int i = 0 ; i<result_hogm.size() ; i++ ){
+            for(int j = 0 ; j<result_hogm[i].size() ; j++){
+                cout << result_hogm[i][j]<<'\t';
+            }
+            cout << endl;
+        }
     }
 
     waitKey(0);
