@@ -942,6 +942,12 @@ void Num_Extract::LearnFromImages(CvMat* trainData, CvMat* trainClasses)
 
 }
 
+svm_model* Num_Extract::loadModel (const char* modelName) {
+    //const char* modelName = "training_data.model";
+    svm_model* model = svm_load_model(modelName);
+    return model;
+}
+
 void Num_Extract::RunSelfTest(KNearest& knn2, CvSVM& SVM2)
 {
     Mat img;
@@ -1103,6 +1109,32 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
     return digits;
 }
 
+int PredictNumber(svm_model* model, Mat _image) {
+    Mat outfile;
+    resize(_image,outfile,Size(2*sizex,sizey));
+
+    IplImage copy = outfile;
+    IplImage* img2 = &copy;
+    vector<float> ders;
+    HOG3(img2,ders);
+
+    //svm_scale
+    svm_node* x;
+    x = new svm_node [HOG3_size+1];
+
+    for (int n = 0; n < ders.size(); n++)
+    {
+        svm_node tmp;
+        tmp.index = n+1;
+        tmp.value = ders.at(n);
+        x[n] = tmp;
+    }
+    x[81].index = -1;
+
+    double predictedValue = svm_predict(model, x);
+
+    return predictedValue;
+}
 
 void Num_Extract::run (Mat img){
     //Scalar lower(29,92,114);
@@ -1113,7 +1145,7 @@ void Num_Extract::run (Mat img){
     cvtColor(img,img2,CV_BGR2HSV);
     Mat output;
     inRange(img2 , lower , higher , output);
-    
+
     extract(output,img);
     cout<<" unflipped \n";
     cout << dst.size()<<endl;
@@ -1230,7 +1262,7 @@ void Num_Extract::run (Mat img){
         }
 
 
-        
+
 
         // find no from detected digits
         /* for (int i=0; i< _print_nos.cols; i++) {
@@ -1241,7 +1273,7 @@ void Num_Extract::run (Mat img){
             if (digits[1]==print_dgt[i][1]) result_ml=_print_nos[i];
         }
       */
-        
+
     }
     else {
         vector<Mat> hist;

@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <svm.h>
 
 using namespace cv;
 using namespace std;
@@ -56,7 +57,8 @@ protected:
     vector<Mat> HOGMatching_Template();
 
     vector<int> HOGMatching_Compare(vector<Mat> hist, Mat test_img);
-
+    svm_model* loadModel (const char* modelName);
+    int PredictNumber(svm_model* model, Mat _image);
 
 
 

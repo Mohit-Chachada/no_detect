@@ -339,7 +339,7 @@ static void HOG3(IplImage *Im,vector<float>& descriptors)
 
 }
 
-void LearnFromImages()
+void GenerateModel()
 {
     Mat img,outfile;
     char file[255];
@@ -384,7 +384,7 @@ int main (int argc, char** argv) {
     //ofstream outputFile;
 
     outputFile.open("training_data");
-    LearnFromImages();
+    GenerateModel();
     outputFile.close();
 
     /*******************************/
