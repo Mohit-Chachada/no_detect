@@ -4,12 +4,12 @@ Num_Extract::Num_Extract(){
 
 }
 
-void Num_Extract::setParams(InParams params){
+Num_Extract::Num_Extract(InParams params){
     _classifier = params.classifier;    // use 1 SVM
     _train_samples = params.train_samples;
     _classes = params.classes;
-    sizex = 20;
-    sizey = 35;
+    sizex = 40;
+    sizey = 70;
     ImageSize = sizex * sizey;
     HOG3_size=81;
     sprintf(_pathToImages,"%s",params.pathToImages);
@@ -21,7 +21,9 @@ void Num_Extract::setParams(InParams params){
     _print_nos[1]= params.print_nos[1];
     _print_nos[2]= params.print_nos[2];
     _print_nos[3]= params.print_nos[3];
+
 }
+
 
 Num_Extract::~Num_Extract(){
 }
@@ -1051,6 +1053,7 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
     }
     cout<< " max area "<<_maxBoxArea<< endl;
 
+
     for (size_t i = 0; i < contours.size(); i++)
     {
         vector < Point > cnt = contours[i];
@@ -1061,11 +1064,14 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
             float aspectR = float(rec.height)/float(rec.width);
             if ( aspectR > 1.0)
             {
+
                 Mat roi = image(rec);
                 Mat stagedImage;// = image(rec);
 
+
                 // Descriptor
                 resize(roi,stagedImage,Size(sizex,sizey));
+
                 IplImage copy = stagedImage;
                 IplImage* img2 = &copy;
                 vector<float> ders;
@@ -1076,11 +1082,14 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
                     sample2->data.fl[n] = ders.at(n);
                 }
 
+                cout<< "sample2 "<< sample2->data.fl[80]<<"\n";
                 // _classifier
                 float result;
                 switch (_classifier) {
                 case 1:
                 {
+                    cout<<"here\n";
+                    waitKey(0);
                     result = SVM.predict(sample2);
                     break;
                 }
@@ -1090,6 +1099,8 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
                     break;
                 }
                 }
+
+
                 digits.push_back(int(result));
                 rectangle(image, Point(rec.x, rec.y),
                           Point(rec.x + rec.width, rec.y + rec.height),
@@ -1147,10 +1158,12 @@ void Num_Extract::run (Mat img){
     inRange(img2 , lower , higher , output);
 
     extract(output,img);
-    cout<<" unflipped \n";
-    cout << dst.size()<<endl;
 
-    Mat dst_flipped[dst.size()];
+    vector<Mat> dst_flipped;
+
+    vector<Mat> final_dst;
+
+    Mat tmp;
 
     /* *****************************************
 <<<<<<< HEAD
@@ -1185,7 +1198,26 @@ void Num_Extract::run (Mat img){
 
         rot_flip = getRotationMatrix2D(Point2f(dst[i].cols/2,dst[i].rows/2),180,1.0);
 
-        warpAffine(dst[i],dst_flipped[i],rot_flip,dst[i].size());
+        warpAffine(dst[i],tmp,rot_flip,dst[i].size());
+
+        dst_flipped.push_back(tmp);
+    }
+
+    for(int i = 0 ; i<dst.size() ; i++){
+        Mat final_tmp = Mat::zeros(dst[i].rows,2*dst[i].cols,CV_8UC3);
+        for(int j = 0 ; j<dst[i].rows ; j++){
+            for(int k = 0 ; k<2*dst[i].cols ; k++){
+                for(int l = 0 ; l<3 ; l++){
+                    if(k<dst[i].cols){
+                        final_tmp.at<Vec3b>(j,k)[l] = dst[i].at<Vec3b>(j,k)[l];
+                    }
+                    else{
+                        final_tmp.at<Vec3b>(j,k)[l] = dst_flipped[i].at<Vec3b>(j,k-dst[i].cols)[l];
+                    }
+                }
+            }
+        }
+        final_dst.push_back(final_tmp);
     }
 
 
@@ -1235,19 +1267,42 @@ void Num_Extract::run (Mat img){
 
         time=clock();
         vector<vector<int> > digits;
+        //vector<vector<int> > digits_rev;
         vector<int> digits1;
+<<<<<<< HEAD
+        cout<< "final_dst size "<<final_dst.size()<<endl;
+        for(int i = 0 ; i<final_dst.size() ; i++){
+            digits1 = AnalyseImage(knearest, SVM, final_dst[i]);
+=======
         cout<< "dst size "<<dst.size()<<endl;
         for(int i = 0 ; i<dst.size() ; i++){
             digits1 = Classification(knearest, SVM, dst[i]);
+>>>>>>> e81a098599b1f739391debb1370b2a35820d4863
             digits.push_back(digits1);
             digits1.clear();
         }
+
+        //cout<< "dst_flipped size "<<dst_flipped.size()<<endl;
+
+        for(int i = 0 ; i<final_dst.size() ; i++){
+            imshow("flipped n unflipped",final_dst[i]);
+            waitKey(0);
+        }
+
+        /*vector<int> digits1_rev;
+        for(int i = 0 ; i<dst_flipped.size() ; i++){
+            digits1_rev = AnalyseImage(knearest, SVM, dst_flipped[i]);
+            digits_rev.push_back(digits1_rev);
+            digits1_rev.clear();
+
+        }*/
         int result_ml[digits.size()];
+        //int result_ml_rev[digits_rev.size()];
         time=clock()-time;
         float run_time=((float)time)/CLOCKS_PER_SEC;
         cout<<"Run Time "<<run_time<<"\n";
         cout<<"no. of bins "<<digits.size()<<endl;
-        //cout<<digits[0].size()<<endl;
+        cout<<digits[0].size()<<endl;
         for(int i = 0 ; i<digits.size() ; i++){
             cout<< "digits of " <<i<<"th box are " << digits[i][0] <<" & "<<digits[i][1]<<"\n";
             if (digits[i][0]==8 || digits[i][1]==8) result_ml[i] = 98;
@@ -1256,11 +1311,23 @@ void Num_Extract::run (Mat img){
             if (digits[i][0]==0 || digits[i][1]==0) result_ml[i] = 10;
 
         }
+        /*for(int i = 0 ; i<digits_rev.size() ; i++){
+            cout<< "digits of " <<i<<"th box after flipping are " << digits_rev[i][0] <<" & "<<digits_rev[i][1]<<"\n";
+            if (digits[i][0]==8 || digits[i][1]==8) result_ml_rev[i] = 98;
+            if (digits[i][0]==7 || digits[i][1]==7) result_ml_rev[i] = 37;
+            if (digits[i][0]==6 || digits[i][1]==6) result_ml_rev[i] = 16;
+            if (digits[i][0]==0 || digits[i][1]==0) result_ml_rev[i] = 10;
+
+        }*/
         cout<<"result ";
         for(int i = 0 ; i<digits.size() ; i++){
             cout<<result_ml[i]<<endl;
         }
-
+        /*
+        cout <<"result after flipping \n";
+        for(int i = 0 ; i<digits_rev.size() ; i++){
+            cout<<result_ml_rev[i]<<endl;
+        }
 
 
 
@@ -1277,7 +1344,7 @@ void Num_Extract::run (Mat img){
     }
     else {
         vector<Mat> hist;
-        vector<vector<int> > result_hogm; // result of all 4 matching methods
+        vector<vector<int> > result_hogm , result_hogm_rev; // result of all 4 matching methods
         vector<int> result;
         //Mat test_img=imread((string)(pathToImages)+"/"+"16.png");
         // Template Histograms
@@ -1287,9 +1354,21 @@ void Num_Extract::run (Mat img){
             result = HOGMatching_Compare(hist,dst[i]);
             result_hogm.push_back(result);
         }
+        for(int i = 0 ; i<dst_flipped.size() ; i++){
+            result = HOGMatching_Compare(hist,dst_flipped[i]);
+            result_hogm_rev.push_back(result);
+        }
+        cout<<"unflipped \n";
         for(int i = 0 ; i<result_hogm.size() ; i++ ){
             for(int j = 0 ; j<result_hogm[i].size() ; j++){
                 cout << result_hogm[i][j]<<'\t';
+            }
+            cout << endl;
+        }
+        cout<<"flipped \n";
+        for(int i = 0 ; i<result_hogm_rev.size() ; i++ ){
+            for(int j = 0 ; j<result_hogm_rev[i].size() ; j++){
+                cout << result_hogm_rev[i][j]<<'\t';
             }
             cout << endl;
         }
