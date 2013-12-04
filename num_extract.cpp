@@ -1120,7 +1120,7 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
     return digits;
 }
 
-int PredictNumber(svm_model* model, Mat _image) {
+int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
     Mat outfile;
     resize(_image,outfile,Size(2*sizex,sizey));
 
@@ -1140,14 +1140,14 @@ int PredictNumber(svm_model* model, Mat _image) {
         tmp.value = ders.at(n);
         x[n] = tmp;
     }
-    x[81].index = -1;
+    x[HOG3_size+1].index = -1;
 
     double predictedValue = svm_predict(model, x);
 
     return predictedValue;
 }
 
-void Num_Extract::run (Mat img){
+/*void Num_Extract::run_cvSVM (Mat img){
     //Scalar lower(29,92,114);
     //Scalar higher(37,256,256);
     Scalar lower(0,92,114);
@@ -1189,7 +1189,7 @@ void Num_Extract::run (Mat img){
 =======
     Mat rot_flip( 2, 3, CV_32FC1 );
 >>>>>>> origin/extract
-        *************************************** */
+        ***************************************
 
     Mat rot_flip( 2, 3, CV_32FC1 );
     for(int i = 0 ; i<dst.size() ; i++){
@@ -1311,7 +1311,7 @@ void Num_Extract::run (Mat img){
             if (digits[1]==print_dgt[i][0]) result_ml=_print_nos[i];
             if (digits[1]==print_dgt[i][1]) result_ml=_print_nos[i];
         }
-      */
+
 
     }
     else {
@@ -1350,7 +1350,91 @@ void Num_Extract::run (Mat img){
 
 
     waitKey(0);
+}*/
+
+void Num_Extract::run(Mat img){
+    //Scalar lower(29,92,114);
+    //Scalar higher(37,256,256);
+    Scalar lower(0,92,114);
+    Scalar higher(74,256,256);
+    Mat img2 = Mat::zeros( img.size(), CV_8UC3 );
+    cvtColor(img,img2,CV_BGR2HSV);
+    Mat output;
+    inRange(img2 , lower , higher , output);
+
+    extract(output,img);
+
+    vector<Mat> dst_flipped;
+
+    Mat tmp;
+
+
+
+
+
+    Mat rot_flip( 2, 3, CV_32FC1 );
+    for(int i = 0 ; i<dst.size() ; i++){
+
+        rot_flip = getRotationMatrix2D(Point2f(dst[i].cols/2,dst[i].rows/2),180,1.0);
+
+        warpAffine(dst[i],tmp,rot_flip,dst[i].size());
+
+        dst_flipped.push_back(tmp);
+    }
+
+    int all_predicted[dst.size()];
+
+    const char* modelName = "training_data.model";
+
+    svm_model* model = loadModel(modelName);
+
+    for(int i = 0 ; i<dst.size() ; i++){
+
+        int predictedValue = PredictNumber(model, dst[i]);
+        cout<< "Guess Value " << predictedValue <<endl;
+
+        all_predicted[i] = predictedValue;
+    }
+
+
+
+
+    //HOG Matching Part//
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    vector<Mat> hist;
+    vector<vector<int> > result_hogm , result_hogm_rev; // result of all 4 matching methods
+    vector<int> result;
+    //Mat test_img=imread((string)(pathToImages)+"/"+"16.png");
+    // Template Histograms
+    hist = HOGMatching_Template();
+    // Compare Histogram
+    for(int i = 0 ; i<dst.size() ; i++){
+        result = HOGMatching_Compare(hist,dst[i]);
+        result_hogm.push_back(result);
+    }
+    for(int i = 0 ; i<dst_flipped.size() ; i++){
+        result = HOGMatching_Compare(hist,dst_flipped[i]);
+        result_hogm_rev.push_back(result);
+    }
+    cout<<"unflipped \n";
+    for(int i = 0 ; i<result_hogm.size() ; i++ ){
+        for(int j = 0 ; j<result_hogm[i].size() ; j++){
+            cout << result_hogm[i][j]<<'\t';
+        }
+        cout << endl;
+    }
+    cout<<"flipped \n";
+    for(int i = 0 ; i<result_hogm_rev.size() ; i++ ){
+        for(int j = 0 ; j<result_hogm_rev[i].size() ; j++){
+            cout << result_hogm_rev[i][j]<<'\t';
+        }
+        cout << endl;
+
+    }
 }
+
 
 
 

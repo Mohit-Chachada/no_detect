@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include <svm.h>
+#include "svm.h"
 
 using namespace cv;
 using namespace std;
