@@ -1120,7 +1120,7 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
     return digits;
 }
 
-int PredictNumber(svm_model* model, Mat _image) {
+int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
     Mat outfile;
     resize(_image,outfile,Size(2*sizex,sizey));
 
@@ -1269,15 +1269,9 @@ void Num_Extract::run (Mat img){
         vector<vector<int> > digits;
         //vector<vector<int> > digits_rev;
         vector<int> digits1;
-<<<<<<< HEAD
-        cout<< "final_dst size "<<final_dst.size()<<endl;
-        for(int i = 0 ; i<final_dst.size() ; i++){
-            digits1 = AnalyseImage(knearest, SVM, final_dst[i]);
-=======
-        cout<< "dst size "<<dst.size()<<endl;
+
         for(int i = 0 ; i<dst.size() ; i++){
             digits1 = Classification(knearest, SVM, dst[i]);
->>>>>>> e81a098599b1f739391debb1370b2a35820d4863
             digits.push_back(digits1);
             digits1.clear();
         }

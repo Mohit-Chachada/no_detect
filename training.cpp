@@ -1,4 +1,4 @@
-    #include "opencv2/ml/ml.hpp"
+#include "opencv2/ml/ml.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/objdetect/objdetect.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "svm.h"
+#include "svm-scale.h"
 
 using namespace cv;
 using namespace std;
@@ -391,7 +392,7 @@ int main (int argc, char** argv) {
     // Model Generation and Prediction using System Commands part
     /*******************************/
 
-/*
+    /*
     char command[1000];
     sprintf(command,"./svm-scale -s training_data.range training_data > training_data.scale");
     system(command);
@@ -408,7 +409,6 @@ int main (int argc, char** argv) {
     // Prediction part
     /*******************************/
 
-/*
     Mat img,outfile;
     char file[255];
     sprintf(file, "%s/%d.png", pathToImages, 98);
@@ -427,9 +427,23 @@ int main (int argc, char** argv) {
     vector<float> ders;
     HOG3(img2,ders);
 
+    // load model
     const char* modelName = "training_data.model";
     svm_model* model = svm_load_model(modelName);
-    //svm_scale
+
+/*
+    // scaling model
+    char **Mscale_argv;   // -s training_data.range training_data > training_data.scale
+    Mscale_argv[1] = "-s";
+    Mscale_argv[2] = "training_data.range";
+    Mscale_argv[3] = "training_data";
+//    Mscale_argv[4] = ">";
+//    Mscale_argv[5] = "training_data.scale";
+
+    int Mscale_argc = 4;
+    scale_main(Mscale_argc,Mscale_argv);
+    cout<<"scaled\n";
+*/
     svm_node* x;
     x = new svm_node [HOG3_size+1];
 
@@ -445,6 +459,6 @@ int main (int argc, char** argv) {
 
     double predictedValue = svm_predict(model, x);
     cout<< "Guess Value " << predictedValue <<endl;
-*/
-return 0;
+
+    return 0;
 }
