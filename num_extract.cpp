@@ -1129,8 +1129,6 @@ void Num_Extract::run (Mat img){
 
     vector<Mat> dst_flipped;
 
-    vector<Mat> final_dst;
-
     Mat tmp;
 
     /* *****************************************
@@ -1170,25 +1168,6 @@ void Num_Extract::run (Mat img){
 
         dst_flipped.push_back(tmp);
     }
-
-    for(int i = 0 ; i<dst.size() ; i++){
-        Mat final_tmp = Mat::zeros(dst[i].rows,2*dst[i].cols,CV_8UC3);
-        for(int j = 0 ; j<dst[i].rows ; j++){
-            for(int k = 0 ; k<2*dst[i].cols ; k++){
-                for(int l = 0 ; l<3 ; l++){
-                    if(k<dst[i].cols){
-                        final_tmp.at<Vec3b>(j,k)[l] = dst[i].at<Vec3b>(j,k)[l];
-                    }
-                    else{
-                        final_tmp.at<Vec3b>(j,k)[l] = dst_flipped[i].at<Vec3b>(j,k-dst[i].cols)[l];
-                    }
-                }
-            }
-        }
-        final_dst.push_back(final_tmp);
-    }
-
-
 
     KNearest knearest;
     CvSVM SVM;
@@ -1235,42 +1214,35 @@ void Num_Extract::run (Mat img){
 
         time=clock();
         vector<vector<int> > digits;
-        //vector<vector<int> > digits_rev;
+        vector<vector<int> > digits_rev;
         vector<int> digits1;
-<<<<<<< HEAD
-        cout<< "final_dst size "<<final_dst.size()<<endl;
-        for(int i = 0 ; i<final_dst.size() ; i++){
-            digits1 = AnalyseImage(knearest, SVM, final_dst[i]);
-=======
+
+
         cout<< "dst size "<<dst.size()<<endl;
         for(int i = 0 ; i<dst.size() ; i++){
             digits1 = Classification(knearest, SVM, dst[i]);
->>>>>>> e81a098599b1f739391debb1370b2a35820d4863
+
             digits.push_back(digits1);
             digits1.clear();
         }
 
-        //cout<< "dst_flipped size "<<dst_flipped.size()<<endl;
 
-        for(int i = 0 ; i<final_dst.size() ; i++){
-            imshow("flipped n unflipped",final_dst[i]);
-            waitKey(0);
-        }
-
-        /*vector<int> digits1_rev;
-        for(int i = 0 ; i<dst_flipped.size() ; i++){
-            digits1_rev = AnalyseImage(knearest, SVM, dst_flipped[i]);
-            digits_rev.push_back(digits1_rev);
-            digits1_rev.clear();
-
-        }*/
         int result_ml[digits.size()];
-        //int result_ml_rev[digits_rev.size()];
+        int result_ml_rev[digits_rev.size()];
         time=clock()-time;
         float run_time=((float)time)/CLOCKS_PER_SEC;
         cout<<"Run Time "<<run_time<<"\n";
         cout<<"no. of bins "<<digits.size()<<endl;
-        cout<<digits[0].size()<<endl;
+
+        cout<< "dst_flipped size "<<dst_flipped.size()<<endl;
+        for(int i = 0 ; i<dst_flipped.size() ; i++){
+            digits1 = Classification(knearest, SVM, dst_flipped[i]);
+
+            digits_rev.push_back(digits1);
+            digits1.clear();
+        }
+
+        //cout<<digits[0].size()<<endl;
         for(int i = 0 ; i<digits.size() ; i++){
             cout<< "digits of " <<i<<"th box are " << digits[i][0] <<" & "<<digits[i][1]<<"\n";
             if (digits[i][0]==8 || digits[i][1]==8) result_ml[i] = 98;
@@ -1279,19 +1251,19 @@ void Num_Extract::run (Mat img){
             if (digits[i][0]==0 || digits[i][1]==0) result_ml[i] = 10;
 
         }
-        /*for(int i = 0 ; i<digits_rev.size() ; i++){
+        for(int i = 0 ; i<digits_rev.size() ; i++){
             cout<< "digits of " <<i<<"th box after flipping are " << digits_rev[i][0] <<" & "<<digits_rev[i][1]<<"\n";
             if (digits[i][0]==8 || digits[i][1]==8) result_ml_rev[i] = 98;
             if (digits[i][0]==7 || digits[i][1]==7) result_ml_rev[i] = 37;
             if (digits[i][0]==6 || digits[i][1]==6) result_ml_rev[i] = 16;
             if (digits[i][0]==0 || digits[i][1]==0) result_ml_rev[i] = 10;
 
-        }*/
+        }
         cout<<"result ";
         for(int i = 0 ; i<digits.size() ; i++){
             cout<<result_ml[i]<<endl;
         }
-        /*
+
         cout <<"result after flipping \n";
         for(int i = 0 ; i<digits_rev.size() ; i++){
             cout<<result_ml_rev[i]<<endl;
