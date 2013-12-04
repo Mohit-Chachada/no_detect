@@ -1,4 +1,4 @@
-#include "opencv2/ml/ml.hpp"
+    #include "opencv2/ml/ml.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/objdetect/objdetect.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -339,7 +339,6 @@ static void HOG3(IplImage *Im,vector<float>& descriptors)
 
 }
 
-
 void LearnFromImages()
 {
     Mat img,outfile;
@@ -370,6 +369,7 @@ void LearnFromImages()
                 outputFile << (n+1) << ":";
                 outputFile << ders.at(n) << " ";
             }
+            //outputFile << "-1:0";
             outputFile << "\n";
         }
     }
@@ -387,12 +387,11 @@ int main (int argc, char** argv) {
     LearnFromImages();
     outputFile.close();
 
-    //svm_parameter
-    //struct svm_problem svmProblem;
-    //svmProblem.l =
-    //struct svm_model* training_model = svm_train();
-    //svm_scale
-    /*
+    /*******************************/
+    // Model Generation and Prediction using System Commands part
+    /*******************************/
+
+/*
     char command[1000];
     sprintf(command,"./svm-scale -s training_data.range training_data > training_data.scale");
     system(command);
@@ -404,23 +403,48 @@ int main (int argc, char** argv) {
     sprintf(command,"./svm-predict -b 1 test_data.scale training_data.model svmOutput");
     system(command);
 */
+
+    /*******************************/
+    // Prediction part
+    /*******************************/
+
+/*
+    Mat img,outfile;
+    char file[255];
+    sprintf(file, "%s/%d.png", pathToImages, 98);
+    img = imread(file, 1);
+    if (!img.data)
+    {
+        cout << "File " << file << " not found\n";
+        exit(1);
+    }
+
+    resize(img,outfile,Size(sizex,sizey));
+    imshow ("outfile",outfile);
+    waitKey(0);
+    IplImage copy = outfile;
+    IplImage* img2 = &copy;
+    vector<float> ders;
+    HOG3(img2,ders);
+
     const char* modelName = "training_data.model";
     svm_model* model = svm_load_model(modelName);
     //svm_scale
     svm_node* x;
-    x = new svm_node [HOG3_size];
+    x = new svm_node [HOG3_size+1];
 
-    for (int i=0; i<HOG3_size; i++) {
+    for (int n = 0; n < ders.size(); n++)
+    {
         svm_node tmp;
-        tmp.index = i+1;
-        tmp.value = 1;
-        x[i] = tmp;
-        cout<< " i " <<i<<endl;
+        tmp.index = n+1;
+        tmp.value = ders.at(n);
+        x[n] = tmp;
+        //cout<< " i " <<n<<endl;
     }
-    cout<<"b4\n";
+    x[81].index = -1;
 
     double predictedValue = svm_predict(model, x);
-    cout<<"after\n";
-    cout<< "guess" << predictedValue <<endl;
-    return 0;
+    cout<< "Guess Value " << predictedValue <<endl;
+*/
+return 0;
 }
