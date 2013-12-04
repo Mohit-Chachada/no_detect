@@ -38,7 +38,7 @@ void output_target(double value);
 void output(int index, double value);
 char* readline(FILE *input);
 
-int main(int argc,char **argv)
+void scale_main (int argc, char **argv)
 {
 	int i,index;
 	FILE *fp, *fp_restore = NULL;
@@ -321,7 +321,7 @@ int main(int argc,char **argv)
 	free(feature_max);
 	free(feature_min);
 	fclose(fp);
-	return 0;
+//	return 0;
 }
 
 char* readline(FILE *input)

@@ -189,7 +189,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
           waitKey(0);
       }*/
 
-    Mat grey,grey0,grey1,grey2,grey3;
+    Mat grey,grey0,grey1,grey2,grey3,grey4,grey5;
 
     vector<Mat> bgr_planes;
 
@@ -212,16 +212,18 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
     for(int i = 0 ; i<masked.size() ; i++){
         split(masked[i],bgr_planes);
 
-        //cvtColor(masked[i],grey1,CV_BGR2GRAY);
+        cvtColor(masked[i],grey4,CV_BGR2GRAY);
 
-        //Canny(grey1,grey,0,256,5);
+        Canny(grey4,grey,0,256,5);
 
+/*
         Canny(bgr_planes[0],grey1,0,256,5);
         Canny(bgr_planes[1],grey2,0,256,5);
         Canny(bgr_planes[2],grey3,0,256,5);
         max(grey1,grey2,grey1);
         max(grey1,grey3,grey);//getting strongest edges
         //max(grey,grey5,grey);
+*/
 
         dilate(grey , grey0 , Mat() , Point(-1,-1));
 
@@ -289,16 +291,24 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
         warpAffine(bgr_planes[1],bgr_planes1[1],rot_mat,grey0.size());
         warpAffine(bgr_planes[2],bgr_planes1[2],rot_mat,grey0.size());
 
+        warpAffine(grey4,grey5,rot_mat,grey0.size());
+
 
         warpAffine(pre,rot_pre,rot_mat,rot_pre.size());//rotating the original (color) image by the same angle
 
+        //Canny(grey5,grey,0,256,5);
 
-        Canny(bgr_planes1[0],grey1,0,256,3);//thresholding the rotated image
-        Canny(bgr_planes1[1],grey2,0,256,3);
-        Canny(bgr_planes1[2],grey3,0,256,3);
+        Canny(bgr_planes1[0],grey1,0,1200,5);//thresholding the rotated image
+        Canny(bgr_planes1[1],grey2,0,1200,5);
+        Canny(bgr_planes1[2],grey3,0,1200,5);
 
         max(grey1,grey2,grey1);
         max(grey1,grey3,grey);//getting the stongest edges
+
+        //dilate(grey , grey0 , Mat() , Point(-1,-1));
+
+        //grey = grey0;
+
 
         cv::findContours(grey, contour,hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 
@@ -312,8 +322,8 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
                 areamax = boxes[j].width*boxes[j].height;
             }
         }//finding the box with the largest area
-
-        /*Mat all_contours = Mat::zeros(pre.size(),CV_8UC3);
+        /*
+        Mat all_contours = Mat::zeros(pre.size(),CV_8UC3);
 
         for(int k = 0 ; k < contour.size() ; k++){
             drawContours( all_contours, contour , k ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
@@ -1249,8 +1259,8 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
         vector<vector<int> > digits_rev;
         vector<int> digits1;
 
-
         cout<< "dst size "<<dst.size()<<endl;
+
         for(int i = 0 ; i<dst.size() ; i++){
             digits1 = Classification(knearest, SVM, dst[i]);
 
@@ -1382,7 +1392,7 @@ void Num_Extract::run(Mat img){
         dst_flipped.push_back(tmp);
     }
 
-    int all_predicted[dst.size()];
+    int all_predicted[dst.size()],all_predicted_rev[dst.size()];
 
     const char* modelName = "training_data.model";
 
@@ -1394,6 +1404,11 @@ void Num_Extract::run(Mat img){
         cout<< "Guess Value " << predictedValue <<endl;
 
         all_predicted[i] = predictedValue;
+
+        int predictedValue_rev = PredictNumber(model, dst_flipped[i]);
+        cout<< "Guess Value after flipping " << predictedValue_rev <<endl;
+
+        all_predicted_rev[i] = predictedValue_rev;
     }
 
 
