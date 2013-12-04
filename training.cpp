@@ -7,6 +7,7 @@
 #include <fstream>
 #include <stdio.h>
 #include <time.h>
+#include "svm.h"
 
 using namespace cv;
 using namespace std;
@@ -369,7 +370,7 @@ void LearnFromImages()
                 outputFile << (n+1) << ":";
                 outputFile << ders.at(n) << " ";
             }
-	    outputFile << "\n";
+            outputFile << "\n";
         }
     }
 
@@ -380,11 +381,46 @@ void LearnFromImages()
 
 
 int main (int argc, char** argv) {
-//ofstream outputFile;
+    //ofstream outputFile;
 
-  outputFile.open("training_data");
-        LearnFromImages();
+    outputFile.open("training_data");
+    LearnFromImages();
+    outputFile.close();
 
- outputFile.close();
+    //svm_parameter
+    //struct svm_problem svmProblem;
+    //svmProblem.l =
+    //struct svm_model* training_model = svm_train();
+    //svm_scale
+    /*
+    char command[1000];
+    sprintf(command,"./svm-scale -s training_data.range training_data > training_data.scale");
+    system(command);
+    sprintf(command,"./svm-train -s 0 -t 2 -b 1 training_data training_data.model");
+    system(command);
+
+    sprintf(command,"./svm-scale -r training_data.range test_data > test_data.scale");
+    system(command);
+    sprintf(command,"./svm-predict -b 1 test_data.scale training_data.model svmOutput");
+    system(command);
+*/
+    const char* modelName = "training_data.model";
+    svm_model* model = svm_load_model(modelName);
+    //svm_scale
+    svm_node* x;
+    x = new svm_node [HOG3_size];
+
+    for (int i=0; i<HOG3_size; i++) {
+        svm_node tmp;
+        tmp.index = i+1;
+        tmp.value = 1;
+        x[i] = tmp;
+        cout<< " i " <<i<<endl;
+    }
+    cout<<"b4\n";
+
+    double predictedValue = svm_predict(model, x);
+    cout<<"after\n";
+    cout<< "guess" << predictedValue <<endl;
     return 0;
 }
