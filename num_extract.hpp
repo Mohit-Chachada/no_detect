@@ -64,9 +64,9 @@ protected:
 
 public:
 
+    Num_Extract(InParams params);
     Num_Extract();
     ~Num_Extract();
-    void setParams(InParams params);
     double pi;
     
     void run (Mat img);

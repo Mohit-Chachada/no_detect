@@ -1,6 +1,6 @@
 #include "num_extract.hpp"
 
-int main (int argc , char *argv[]){
+int main (int argc , char **argv){
     Mat img = imread(argv[1],1);
     InParams params;
     params.classes = 10;
@@ -12,8 +12,8 @@ int main (int argc , char *argv[]){
     params.print_nos[3] = 98;
     params.temp_match = false;
     params.train_samples = 4;
-    Num_Extract Num1 = Num_Extract();
-    Num1.setParams(params);
+    Num_Extract Num1(params);
+    //Num1.setParams(params);
 	Num1.run(img);
     return 0;
 }
