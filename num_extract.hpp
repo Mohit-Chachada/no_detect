@@ -31,10 +31,10 @@ private:
     int _classifier;    // use 1 SVM
     int _train_samples;
     int _classes;
-	int sizex ;
-	int sizey ;
-	int ImageSize ;
-	int HOG3_size;
+    int sizex ;
+    int sizey ;
+    int ImageSize ;
+    int HOG3_size;
     char _pathToImages[200];
     bool _temp_match;
     int _print_nos[4];
@@ -43,35 +43,35 @@ protected:
 
     bool A_encloses_B(RotatedRect A, RotatedRect B);
     bool validate (Mat mask, Mat pre);
-    void extract_Number(Mat pre , vector<Mat>src , bool flip);
-	
-	void LearnFromImages(CvMat* trainData, CvMat* trainClasses);
-	void RunSelfTest(KNearest& knn2, CvSVM& SVM2);
+    void extract_Number(Mat pre , vector<Mat>src);
+    void extract(Mat mask, Mat pre);
+
+    void LearnFromImages(CvMat* trainData, CvMat* trainClasses);
+    void RunSelfTest(KNearest& knn2, CvSVM& SVM2);
     vector<int> Classification(KNearest knearest, CvSVM SVM, Mat _image);
-	
-	float maximum(float x, float y, float z); 
-	
-	void HOG3(IplImage *Im,vector<float>& descriptors);
-	
+
+    float maximum(float x, float y, float z);
+
+    void HOG3(IplImage *Im,vector<float>& descriptors);
     vector<Mat> HOGMatching_Template();
 
-	vector<int> HOGMatching_Compare(vector<Mat> hist, Mat test_img);
+    vector<int> HOGMatching_Compare(vector<Mat> hist, Mat test_img);
 
-    void extract(Mat mask, Mat pre, bool flip);
-	
 
-	
+
+
+
 public:
 
     Num_Extract();
-	~Num_Extract();
+    ~Num_Extract();
     void setParams(InParams params);
-	double pi;
+    double pi;
     
-	void run (Mat img);
+    void run (Mat img);
 
-        vector<Mat> dst;
-        bool is_valid ;
+    vector<Mat> dst;
+    bool is_valid ;
 
 };
 
