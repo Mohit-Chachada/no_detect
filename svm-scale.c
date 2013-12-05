@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <iostream>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
 
 void exit_with_help()
 {
@@ -30,6 +35,7 @@ int max_index;
 int min_index;
 long int num_nonzeros = 0;
 long int new_num_nonzeros = 0;
+std::vector<float> scaled_values; 	//ADD
 
 FILE *fp_scaled_OP = NULL;	/// ADD
 #define max(x,y) (((x)>(y))?(x):(y))
@@ -39,7 +45,7 @@ void output_target(double value);
 void output(int index, double value);
 char* readline(FILE *input);
 
-void scale_main (int argc, char **argv, char* fscaled_name)
+std::vector<float> scale_main (int argc, char **argv, char* fscaled_name)
 {
 	int i,index;
 	FILE *fp, *fp_restore = NULL;
@@ -323,7 +329,7 @@ fprintf(fp_scaled_OP,"\n");	/// ADD
 	free(feature_min);
 	fclose(fp);
 fclose(fp_scaled_OP); 	/// ADD	
-//	return 0;
+	return scaled_values;	///ADD
 }
 
 char* readline(FILE *input)
@@ -379,6 +385,7 @@ void output(int index, double value)
 	if(value != 0)
 	{
 fprintf(fp_scaled_OP, "%d:%g ",index, value);	/// ADD
+scaled_values.push_back(value);		///ADD
 		printf("%d:%g ",index, value);
 		new_num_nonzeros++;
 	}

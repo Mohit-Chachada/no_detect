@@ -216,7 +216,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
 
         Canny(grey4,grey,0,256,5);
 
-/*
+        /*
         Canny(bgr_planes[0],grey1,0,256,5);
         Canny(bgr_planes[1],grey2,0,256,5);
         Canny(bgr_planes[2],grey3,0,256,5);
@@ -1141,7 +1141,7 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
 
     //svm_scale
     svm_node* x;
-    x = new svm_node [HOG3_size+1];
+    x = new svm_node [ders.size()+1];
 
     for (int n = 0; n < ders.size(); n++)
     {
@@ -1150,7 +1150,7 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
         tmp.value = ders.at(n);
         x[n] = tmp;
     }
-    x[HOG3_size+1].index = -1;
+    x[ders.size()].index = -1;
 
     double predictedValue = svm_predict(model, x);
 
@@ -1362,69 +1362,61 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
     waitKey(0);
 }*/
 
-void Num_Extract::run(Mat img){
+void Num_Extract::run(Mat preprocessed_image){
+
+    //// Yellow Color Detection
     //Scalar lower(29,92,114);
     //Scalar higher(37,256,256);
     Scalar lower(0,92,114);
     Scalar higher(74,256,256);
-    Mat img2 = Mat::zeros( img.size(), CV_8UC3 );
-    cvtColor(img,img2,CV_BGR2HSV);
-    Mat output;
-    inRange(img2 , lower , higher , output);
+    Mat img_HSV = Mat::zeros( preprocessed_image.size(), CV_8UC3 );
+    cvtColor(preprocessed_image,img_HSV,CV_BGR2HSV);
+    Mat after_colord;
+    inRange(img_HSV,lower,higher,after_colord);
 
-    extract(output,img);
+    //// Extracting Number region for all detected bins
+    //// Output: dst [vertically oriented]
+    extract(after_colord,preprocessed_image);
 
+    //// Rotating all by 180
     vector<Mat> dst_flipped;
-
     Mat tmp;
-
-
-
-
 
     Mat rot_flip( 2, 3, CV_32FC1 );
     for(int i = 0 ; i<dst.size() ; i++){
-
         rot_flip = getRotationMatrix2D(Point2f(dst[i].cols/2,dst[i].rows/2),180,1.0);
-
         warpAffine(dst[i],tmp,rot_flip,dst[i].size());
-
         dst_flipped.push_back(tmp);
     }
 
     int all_predicted[dst.size()],all_predicted_rev[dst.size()];
 
+    //// Load SVM Model
     const char* modelName = "training_data.model";
-
     svm_model* model = loadModel(modelName);
 
     for(int i = 0 ; i<dst.size() ; i++){
 
         int predictedValue = PredictNumber(model, dst[i]);
-        cout<< "Guess Value " << predictedValue <<endl;
-
+        cout<< "Guess Value before fillping" << predictedValue <<endl;
         all_predicted[i] = predictedValue;
 
         int predictedValue_rev = PredictNumber(model, dst_flipped[i]);
         cout<< "Guess Value after flipping " << predictedValue_rev <<endl;
-
         all_predicted_rev[i] = predictedValue_rev;
+
     }
 
 
-
-
-    //HOG Matching Part//
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-
-
+    //// HOG Matching Part
     vector<Mat> hist;
-    vector<vector<int> > result_hogm , result_hogm_rev; // result of all 4 matching methods
-    vector<int> result;
-    //Mat test_img=imread((string)(pathToImages)+"/"+"16.png");
-    // Template Histograms
+    vector<vector<int> > result_hogm , result_hogm_rev;
+    vector<int> result;     // result of all 4 matching methods
+
+    // Template HOGs
     hist = HOGMatching_Template();
-    // Compare Histogram
+
+    // Compare HOGs
     for(int i = 0 ; i<dst.size() ; i++){
         result = HOGMatching_Compare(hist,dst[i]);
         result_hogm.push_back(result);
@@ -1433,6 +1425,7 @@ void Num_Extract::run(Mat img){
         result = HOGMatching_Compare(hist,dst_flipped[i]);
         result_hogm_rev.push_back(result);
     }
+
     cout<<"unflipped \n";
     for(int i = 0 ; i<result_hogm.size() ; i++ ){
         for(int j = 0 ; j<result_hogm[i].size() ; j++){

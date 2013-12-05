@@ -348,7 +348,7 @@ void storeTrainingData()
 
     for (int i = 0; i < classes; i++)
     {
-        
+
         int nr = print_nos[i];
         for (int j=0; j < train_samples ; j++)
         {
@@ -401,54 +401,14 @@ int main (int argc, char** argv) {
     sprintf(command,"./svm-predict -b 1 test_data.scale training_data.model svmOutput");
     system(command);
 */
-
-    // Store Training Data
-    trainingData.open("training_data");
-    storeTrainingData();
-    trainingData.close();
-
-    // scale training_data
-    int Mscale_argc = 4;
-    char **Mscale_argv;   // -s training_data.range training_data > training_data.scale
-    Mscale_argv = new char* [Mscale_argc];
-
-    for (int i=0; i< Mscale_argc; i++) {
-        Mscale_argv[i] = new char [100];
-    }
-    sprintf(Mscale_argv[1], "%s", "-s");
-    sprintf(Mscale_argv[2], "%s", "training_data.range");
-    sprintf(Mscale_argv[3], "%s", "training_data");
-    char* MscaleOP;
-    MscaleOP = new char [100];
-    sprintf(MscaleOP, "%s", "training_data.scale");
-
-    vector<float> training_scaled = scale_main(Mscale_argc,Mscale_argv,MscaleOP);
-    cout<<"scaled training data\n";
-
-    /*
-    // generate model and store it
-    svm_problem *prob;
-    svm_parameter *param;
-    const char* modelName = "training_data.model";
-    prob->l = classes*train_samples;
-    prob->y;
-    prob->x;
-    svm_model* model = svm_train(prob,param);
-    int a = svm_save_model(modelName,model);
-*/
-
-    char command[1000];
-    sprintf(command,"./svm-train -s 0 -t 2 -b 1 training_data.scale training_data.model");
-    system(command);
-
-    // load model
+    // load model (scaled)
     const char* modelName = "training_data.model";
     svm_model* model = svm_load_model(modelName);
 
     // test data [O/P]
     Mat img,outfile;
     char file[255];
-    sprintf(file, "%s/%d.png", pathToImages, 98);
+    sprintf(file, "%s/%d.png", pathToImages, 10);
     img = imread(file, 1);
     if (!img.data)
     {
@@ -464,6 +424,7 @@ int main (int argc, char** argv) {
     vector<float> ders;
     HOG3(img2,ders);
 
+    //  storing test data
     ofstream testData;
     testData.open("test_data");
     testData<<10<<" ";
@@ -472,7 +433,7 @@ int main (int argc, char** argv) {
         testData << (n+1) << ":";
         testData << ders.at(n) << " ";
     }
-    //trainingData << "-1:0";
+    //testData << "-1:0";
     testData << "\n";
     testData.close();
 
@@ -492,44 +453,22 @@ int main (int argc, char** argv) {
     sprintf(TscaleOP, "%s", "test_data.scale");
     vector<float> test_scaled = scale_main(Tscale_argc,Tscale_argv,TscaleOP);
 
-    // reading scaled test data and predict
-    ifstream testScaledData;
-    testScaledData.open("test_data.scale");
     svm_node* x;
     x = new svm_node [ders.size()+1];
-
-    int ffargc = ders.size()+1;
-    char **ff;   // -s training_data.range training_data > training_data.scale
-    ff = new char* [ffargc];
-    string gg;
-    for (int i=0; i< ffargc; i++) {
-        ff[i] = new char [100];
-    }
-
-    testScaledData>>ff[0];     // read 1st no
-    for (int n = 1; n < ffargc; n++)
+    for (int n = 0; n < ders.size(); n++)
     {
-        testScaledData>>gg;
-        cout<< " gg "<<gg<<"\n";
-/*        testScaledData>>ff[n];     // read
-        int k=0;
-        while (ff[n][k]!=':') {
-            k++;
-        }
-        while (ff[n][k]!=)
-        cout<< "sizeof "<<ff[n]<<"\n";
-        //for (int j=k+1; j<)
         svm_node tmp;
-        tmp.index = n;
-        tmp.value = ders.at(n-1);
-        x[n-1] = tmp;
-        cout<< " n " <<n<<"ff " <<ff[n] <<endl;
-*/
+        tmp.index = n+1;
+        tmp.value = test_scaled.at(n);
+        x[n] = tmp;
+        cout<< " n " <<n<<"test_scaled[n] " <<test_scaled.at(n) <<endl;
+
     }
-    x[81].index = -1;
-    /*
+    x[ders.size()].index = -1;
+
     double predictedValue = svm_predict(model, x);
     cout<< "Guess Value " << predictedValue <<endl;
-*/
+
     return 0;
 }
+
