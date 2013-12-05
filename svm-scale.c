@@ -31,6 +31,7 @@ int min_index;
 long int num_nonzeros = 0;
 long int new_num_nonzeros = 0;
 
+FILE *fp_scaled_OP = NULL;	/// ADD
 #define max(x,y) (((x)>(y))?(x):(y))
 #define min(x,y) (((x)<(y))?(x):(y))
 
@@ -38,13 +39,13 @@ void output_target(double value);
 void output(int index, double value);
 char* readline(FILE *input);
 
-void scale_main (int argc, char **argv)
+void scale_main (int argc, char **argv, char* fscaled_name)
 {
 	int i,index;
 	FILE *fp, *fp_restore = NULL;
 	char *save_filename = NULL;
 	char *restore_filename = NULL;
-
+fp_scaled_OP = fopen(fscaled_name,"w");	/// ADD
 	for(i=1;i<argc;i++)
 	{
 		if(argv[i][0] != '-') break;
@@ -78,7 +79,7 @@ void scale_main (int argc, char **argv)
 		fprintf(stderr,"cannot use -r and -s simultaneously\n");
 		exit(1);
 	}
-
+ 
 	if(argc != i+1) 
 		exit_with_help();
 
@@ -303,7 +304,7 @@ void scale_main (int argc, char **argv)
 			SKIP_ELEMENT
 			next_index=index+1;
 		}		
-
+fprintf(fp_scaled_OP,"\n");	/// ADD	
 		for(i=next_index;i<=max_index;i++)
 			output(i,0);
 
@@ -321,6 +322,7 @@ void scale_main (int argc, char **argv)
 	free(feature_max);
 	free(feature_min);
 	fclose(fp);
+fclose(fp_scaled_OP); 	/// ADD	
 //	return 0;
 }
 
@@ -353,9 +355,12 @@ void output_target(double value)
 		else value = y_lower + (y_upper-y_lower) *
 			     (value - y_min)/(y_max-y_min);
 	}
+fprintf(fp_scaled_OP,"%g ",value);	/// ADD
 	printf("%g ",value);
+
 }
 
+		
 void output(int index, double value)
 {
 	/* skip single-valued attribute */
@@ -373,6 +378,7 @@ void output(int index, double value)
 
 	if(value != 0)
 	{
+fprintf(fp_scaled_OP, "%d:%g ",index, value);	/// ADD
 		printf("%d:%g ",index, value);
 		new_num_nonzeros++;
 	}
