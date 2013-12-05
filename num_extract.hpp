@@ -15,15 +15,6 @@
 using namespace cv;
 using namespace std;
 
-struct InParams{
-    int classifier;    // use 1 SVM
-    int train_samples;
-    int classes;
-    char pathToImages[200];
-    bool temp_match;
-    int print_nos[4];
-};
-
 class Num_Extract
 {
 private:
@@ -65,7 +56,16 @@ protected:
 
 public:
 
-    Num_Extract(InParams params);
+    struct InParams{
+        int classifier;    // use 1 SVM
+        int train_samples;
+        int classes;
+        char pathToImages[200];
+        bool temp_match;
+        int print_nos[4];
+    };
+
+    Num_Extract(Num_Extract::InParams params);
     Num_Extract();
     ~Num_Extract();
     double pi;

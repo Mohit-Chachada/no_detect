@@ -4,7 +4,7 @@ Num_Extract::Num_Extract(){
 
 }
 
-Num_Extract::Num_Extract(InParams params){
+Num_Extract::Num_Extract(Num_Extract::InParams params){
     _classifier = params.classifier;    // use 1 SVM
     _train_samples = params.train_samples;
     _classes = params.classes;
@@ -171,7 +171,7 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     return validate;
 }
 
-void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
+void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     Mat rot_pre;
 
     Scalar color = Scalar(255,255,255);
@@ -189,11 +189,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
           waitKey(0);
       }*/
 
-    Mat grey,grey0,grey1,grey2,grey3,grey4,grey5;
-
-    vector<Mat> bgr_planes;
-
-    Mat bgr_planes1[3];
+    Mat grey,grey0,grey1,grey2,grey3;
 
     vector<Vec4i> hierarchy;
 
@@ -206,222 +202,259 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src  ){
     int out_ind;
 
     vector<Rect> valid,valid1,boxes;//valid and valid1 are bounding rectangles after testing validity conditions
-    //boxes contains all bounding boxes
+                                    //boxes contains all bounding boxes
     vector<int> valid_index,valid_index1;
 
+    Mat ext_number;
+
+
+    bool prevBoxwasGood = false;
+    bool badBoxAfterGood = false;
+
+    Mat ext_prev;
+
+    Rect box_prev;
+
     for(int i = 0 ; i<masked.size() ; i++){
-        split(masked[i],bgr_planes);
+        double thresh = 10;
 
-        cvtColor(masked[i],grey4,CV_BGR2GRAY);
+        while (thresh < 2000) {
 
-        Canny(grey4,grey,0,256,5);
+            vector<Mat> bgr_planes;
 
-/*
-        Canny(bgr_planes[0],grey1,0,256,5);
-        Canny(bgr_planes[1],grey2,0,256,5);
-        Canny(bgr_planes[2],grey3,0,256,5);
-        max(grey1,grey2,grey1);
-        max(grey1,grey3,grey);//getting strongest edges
-        //max(grey,grey5,grey);
-*/
+            split(masked[i],bgr_planes);
 
-        dilate(grey , grey0 , Mat() , Point(-1,-1));
+            //cvtColor(masked[i],grey1,CV_BGR2GRAY);
 
-        grey = grey0;
+            //Canny(grey1,grey,0,256,5);
 
-        cv::findContours(grey, ext_contour,CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+            Canny(bgr_planes[0],grey1,0,thresh,5);
+            Canny(bgr_planes[1],grey2,0,thresh,5);
+            Canny(bgr_planes[2],grey3,0,thresh,5);
+            max(grey1,grey2,grey1);
+            max(grey1,grey3,grey);//getting strongest edges
 
-        double areamax = 0;
+            //dilate(grey , grey0 , Mat() , Point(-1,-1));
 
-        int index;
-        for(int j = 0 ; j< ext_contour.size() ; j++){
-            if(contourArea(ext_contour[j],false)>areamax){
-                index = j;
-                areamax = contourArea(ext_contour[j],false);
+            cv::findContours(grey, ext_contour,CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+
+            double areamax = 0;
+
+            int index;
+            for(int j = 0 ; j< ext_contour.size() ; j++){
+                if(contourArea(ext_contour[j],false)>areamax){
+                    index = j;
+                    areamax = contourArea(ext_contour[j],false);
+                }
             }
-        }
 
-        outrect = minAreaRect(Mat(ext_contour[index]));//outer rectangle of the bin
+            bool goodBoxFound = false;
 
-        float angle,width;
+            outrect = minAreaRect(Mat(ext_contour[index]));//outer rectangle of the bin
 
-        Point2f pts[4];
+            float angle,width;
 
-        outrect.points(pts);
+            Point2f pts[4];
 
-        float dist1 = (sqrt((pts[0].y-pts[1].y)*(pts[0].y-pts[1].y) + (pts[0].x-pts[1].x)*(pts[0].x-pts[1].x)));
+            outrect.points(pts);
 
-        float dist2 = (sqrt((pts[0].y-pts[3].y)*(pts[0].y-pts[3].y) + (pts[0].x-pts[3].x)*(pts[0].x-pts[3].x)));
+            float dist1 = (sqrt((pts[0].y-pts[1].y)*(pts[0].y-pts[1].y) + (pts[0].x-pts[1].x)*(pts[0].x-pts[1].x)));
 
-        if (dist1>dist2) width = dist1;//getting the longer edge length of outrect
+            float dist2 = (sqrt((pts[0].y-pts[3].y)*(pts[0].y-pts[3].y) + (pts[0].x-pts[3].x)*(pts[0].x-pts[3].x)));
 
-        else width = dist2;
+            if (dist1>dist2) width = dist1;//getting the longer edge length of outrect
 
-        for(int j = 0 ; j<4 ; j++){
-            float dist = sqrt((pts[j].y-pts[(j+1)%4].y)*(pts[j].y-pts[(j+1)%4].y) + (pts[j].x-pts[(j+1)%4].x)*(pts[j].x-pts[(j+1)%4].x));
-            if(dist==width){
-                angle = atan((pts[j].y-pts[(j+1)%4].y)/(pts[(j+1)%4].x-pts[j].x));
+            else width = dist2;
+
+            for(int j = 0 ; j<4 ; j++){
+                float dist = sqrt((pts[j].y-pts[(j+1)%4].y)*(pts[j].y-pts[(j+1)%4].y) + (pts[j].x-pts[(j+1)%4].x)*(pts[j].x-pts[(j+1)%4].x));
+                if(dist==width){
+                    angle = atan((pts[j].y-pts[(j+1)%4].y)/(pts[(j+1)%4].x-pts[j].x));
+                }
             }
-        }
 
-        Mat outrect_img = Mat::zeros(pre.size(),CV_8UC3);
+            Mat outrect_img = Mat::zeros(pre.size(),CV_8UC3);
 
-        /*for (int j = 0; j < 4; j++)
-            line(image, pts[j], pts[(j+1)%4], Scalar(0,255,0));
-        imshow("outrect" , outrect_img);
-        waitKey(0);*/
+            /*for (int j = 0; j < 4; j++)
+                line(image, pts[j], pts[(j+1)%4], Scalar(0,255,0));
+            imshow("outrect" , outrect_img);
+            waitKey(0);*/
 
-        angle = angle * 180/3.14;
+            angle = angle * 180/3.14;
 
-        cout << angle <<endl;
+            //cout << angle <<endl;
 
-        if(angle<0){//building rotation matrices
-            rot_mat = getRotationMatrix2D(outrect.center,(-90-angle),1.0);
-        }
-        else{
-            rot_mat = getRotationMatrix2D(outrect.center,(90-angle),1.0);
-        }
-
-
-
-
-        //warpAffine(grey1,grey0,rot_mat,grey0.size());
-
-        warpAffine(bgr_planes[0],bgr_planes1[0],rot_mat,grey0.size());//rotating to make the outer bin straight
-        warpAffine(bgr_planes[1],bgr_planes1[1],rot_mat,grey0.size());
-        warpAffine(bgr_planes[2],bgr_planes1[2],rot_mat,grey0.size());
-
-        warpAffine(grey4,grey5,rot_mat,grey0.size());
-
-
-        warpAffine(pre,rot_pre,rot_mat,rot_pre.size());//rotating the original (color) image by the same angle
-
-        //Canny(grey5,grey,0,256,5);
-
-        Canny(bgr_planes1[0],grey1,0,1200,5);//thresholding the rotated image
-        Canny(bgr_planes1[1],grey2,0,1200,5);
-        Canny(bgr_planes1[2],grey3,0,1200,5);
-
-        max(grey1,grey2,grey1);
-        max(grey1,grey3,grey);//getting the stongest edges
-
-        //dilate(grey , grey0 , Mat() , Point(-1,-1));
-
-        //grey = grey0;
-
-
-        cv::findContours(grey, contour,hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
-
-        for(int j = 0 ; j<contour.size() ; j++){
-            boxes.push_back(boundingRect(Mat(contour[j])));
-        }//making boxes out of all contours
-        areamax = 0;
-
-        for(int j = 0 ; j<boxes.size() ; j++){
-            if(boxes[j].width*boxes[j].height > areamax){
-                areamax = boxes[j].width*boxes[j].height;
+            if(angle<0){//building rotation matrices
+                rot_mat = getRotationMatrix2D(outrect.center,(-90-angle),1.0);
             }
-        }//finding the box with the largest area
-        /*
-        Mat all_contours = Mat::zeros(pre.size(),CV_8UC3);
-
-        for(int k = 0 ; k < contour.size() ; k++){
-            drawContours( all_contours, contour , k ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
-        }
-        imshow("all contours",all_contours);
-        waitKey(0);
-        */
-        Mat box_n_contours = Mat::zeros(pre.size(),CV_8UC3);
-        for(int k = 0 ; k < contour.size() ; k++){
-            drawContours(box_n_contours , contour , k ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
-            if(boxes[k].width*boxes[k].height==areamax){
-                continue;
+            else{
+                rot_mat = getRotationMatrix2D(outrect.center,(90-angle),1.0);
             }
-            rectangle(box_n_contours , boxes[k] , color );
-        }
+            Mat img;
 
-        imshow("contours with boxes except outermost",box_n_contours);
-        waitKey(0);
+            warpAffine(masked[i],img,rot_mat,grey.size());//rotating to make the outer bin straight
 
-        for (int j = 0 ; j < boxes.size() ; j++){
-            if(boxes[j].width*boxes[j].height < 0.7*areamax && boxes[j].width*boxes[j].height > 0.05*areamax){
-                valid.push_back(boxes[j]);//Filtering boxes on the basis of their area (rejecting the small ones)
-                valid_index.push_back(j); //this is the first validating condition
+            bgr_planes.clear();
+
+            split(img,bgr_planes);
+
+            warpAffine(pre,rot_pre,rot_mat,rot_pre.size());//rotating the original (color) image by the same angle
+
+            Canny(bgr_planes[0],grey1,0,thresh,5);
+            Canny(bgr_planes[1],grey2,0,thresh,5);
+            Canny(bgr_planes[2],grey3,0,thresh,5);
+            max(grey1,grey2,grey1);
+            max(grey1,grey3,grey);//getting strongest edges
+
+            //dilate(grey , grey0 , Mat() , Point(-1,-1));
+            //grey = grey0;
+
+            cv::findContours(grey, contour,hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+
+            for(int j = 0 ; j<contour.size() ; j++){
+                boxes.push_back(boundingRect(Mat(contour[j])));
+            }//making boxes out of all contours
+            areamax = 0;
+
+            for(int j = 0 ; j<boxes.size() ; j++){
+                if(boxes[j].width*boxes[j].height > areamax){
+                    areamax = boxes[j].width*boxes[j].height;
+                }
+            }//finding the box with the largest area
+
+            /*Mat all_contours = Mat::zeros(pre.size(),CV_8UC3);
+
+            for(int k = 0 ; k < contour.size() ; k++){
+                drawContours( all_contours, contour , k ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
             }
-        }
-
-        for(int j = 0 ; j<valid.size() ; j++){
-            double aspect = valid[j].width/valid[j].height;
-            if(aspect < 1){//removing others on the basis of aspect ratio , second validating condition
-                valid1.push_back(valid[j]);//forming the list of valid bounding boxes
-                valid_index1.push_back(valid_index[j]);
+            imshow("all contours",all_contours);
+            waitKey(0);
+            */
+            Mat box_n_contours = Mat::zeros(pre.size(),CV_8UC3);
+            for(int k = 0 ; k < contour.size() ; k++){
+                drawContours(box_n_contours , contour , k ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
+                if(boxes[k].width*boxes[k].height==areamax){
+                    continue;
+                }
+                rectangle(box_n_contours , boxes[k] , color );
             }
+
+            //imshow("contours with boxes except outermost",box_n_contours);
+            //waitKey(0);
+
+            for (int j = 0 ; j < boxes.size() ; j++){
+                if(boxes[j].width*boxes[j].height < 0.7*areamax && boxes[j].width*boxes[j].height > 0.05*areamax){
+                    valid.push_back(boxes[j]);//Filtering boxes on the basis of their area (rejecting the small ones)
+                    valid_index.push_back(j); //this is the first validating condition
+                }
+            }
+
+            for(int j = 0 ; j<valid.size() ; j++){
+                double aspect = (float)valid[j].width/(float)valid[j].height;
+                if(aspect < 1){//removing others on the basis of aspect ratio , second validating condition
+                    valid1.push_back(valid[j]);//forming the list of valid bounding boxes
+                    valid_index1.push_back(valid_index[j]);
+                }
+            }
+            Mat first_test_boxes = Mat::zeros(pre.size(),CV_8UC3);
+            for(int k = 0 ; k < valid.size() ; k++){
+                rectangle(first_test_boxes , valid[k] , color );
+            }
+            //imshow("after first test ",first_test_boxes);
+            //waitKey(0);
+
+            Mat final_boxes = Mat::zeros(pre.size(),CV_8UC3);
+            for(int k = 0 ; k < valid1.size() ; k++){
+                rectangle(final_boxes , valid1[k] , color );
+                drawContours(final_boxes , contour , valid_index1[k] ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
+            }//valid_index1 is required to draw the corresponding contours
+
+            //imshow("final valid boxes and contours",final_boxes);
+
+            //waitKey(0);
+
+            Rect box = valid1[0];
+            for(int j = 1 ; j<valid1.size() ; j++){ // now joining all valid boxes to extract the number
+                box = box | valid1[j];
+            }
+            Mat final_mask = Mat::zeros(pre.size(),CV_8UC3);
+
+            rectangle(final_mask , box , color ,CV_FILLED );//building the final mask
+
+            ext_number = rot_pre & final_mask;//applying final_mask onto rot_pre
+
+            //imshow("extracted no." , ext_number);
+            //waitKey(0);
+
+            //Mat ext_prev = Mat::zeros(ext_number.size(),CV_8UC3);
+
+            boxes.clear();
+            valid.clear();
+            valid1.clear();
+            valid_index.clear();
+            valid_index1.clear();
+            cout<<"threshold level "<<thresh<<endl;
+            thresh += 2000/200;
+            double ratio = (box.width*box.height)/areamax;
+            double aspect_ratio = (float)box.height/(float)box.width;
+            cout <<"areamax is "<<areamax<<"  detected area is "<<box.width*box.height<<endl;
+            cout <<"ratio is : "<<ratio<<endl;
+            cout<<"aspect ratio is :"<<aspect_ratio<<endl;
+
+            if(aspect_ratio>1.4 && aspect_ratio<1.65 && ratio>0.25 && ratio<0.55){
+                goodBoxFound = true;
+            }
+
+            if(prevBoxwasGood && !goodBoxFound){
+                badBoxAfterGood = true;
+            }
+
+            if(badBoxAfterGood){
+                ext_number = ext_prev;
+                break;
+            }
+            cout<<"good box : "<<goodBoxFound<<endl;
+            cout<<"bad box after good : "<<badBoxAfterGood<<endl;
+            ext_number.copyTo(ext_prev);
+            prevBoxwasGood = goodBoxFound;
+            box_prev = box;
+
         }
-        Mat first_test_boxes = Mat::zeros(pre.size(),CV_8UC3);
-        for(int k = 0 ; k < valid.size() ; k++){
-            rectangle(first_test_boxes , valid[k] , color );
-        }
-        imshow("after first test ",first_test_boxes);
-        waitKey(0);
-
-        Mat final_boxes = Mat::zeros(pre.size(),CV_8UC3);
-        for(int k = 0 ; k < valid1.size() ; k++){
-            rectangle(final_boxes , valid1[k] , color );
-            drawContours(final_boxes , contour , valid_index1[k] ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
-        }//valid_index1 is required to draw the corresponding contours
-
-        imshow("final valid boxes and contours",final_boxes);
-
-        waitKey(0);
-
-        Rect box = valid1[0];
-        for(int j = 1 ; j<valid1.size() ; j++){ // now joining all valid boxes to extract the number
-            box = box | valid1[j];
-        }
-        Mat final_mask = Mat::zeros(pre.size(),CV_8UC3);
-
-        rectangle(final_mask , box , color ,CV_FILLED );//building the final mask
-
-        Mat ext_number = rot_pre & final_mask;//applying final_mask onto rot_pre
-
-        Mat num_img = Mat::zeros(box.height,box.width,CV_8UC3);
-
-        imshow("extracted no." , ext_number);
-        waitKey(0);
+        Mat num_img = Mat::zeros(box_prev.height,box_prev.width,CV_8UC3);
         int start_j,start_k;
-        bool found = false;
-        for(int j = 0 ; j<ext_number.rows ; j++){
-            for(int k = 0 ; k<ext_number.cols ; k++ ){
-                if(ext_number.at<Vec3b>(j,k)[0] != 0 || ext_number.at<Vec3b>(j,k)[1] != 0 || ext_number.at<Vec3b>(j,k)[2] != 0 ){
-                    start_j = j;
-                    start_k = k;
-                    found = true;
-                    break;
+                bool found = false;
+                for(int j = 0 ; j<ext_number.rows ; j++){
+                    for(int k = 0 ; k<ext_number.cols ; k++ ){
+                        if(ext_number.at<Vec3b>(j,k)[0] != 0 || ext_number.at<Vec3b>(j,k)[1] != 0 || ext_number.at<Vec3b>(j,k)[2] != 0 ){
+                            start_j = j;
+                            start_k = k;
+                            found = true;
+                            break;
+                        }
+                        if(found){
+                            break;
+                        }
+                    }
                 }
-                if(found){
-                    break;
+                for(int j = start_j ; j<start_j+box_prev.height ; j++ ){
+                    for(int k = start_k ; k<start_k+box_prev.width ; k++){
+                        for(int l = 0 ; l<3 ; l++){
+                            num_img.at<Vec3b>(j-start_j,k-start_k)[l] = ext_number.at<Vec3b>(j,k)[l];
+                        }
+                    }
                 }
-            }
-        }
-        for(int j = start_j ; j<start_j+box.height ; j++ ){
-            for(int k = start_k ; k<start_k+box.width ; k++){
-                for(int l = 0 ; l<3 ; l++){
-                    num_img.at<Vec3b>(j-start_j,k-start_k)[l] = ext_number.at<Vec3b>(j,k)[l];
-                }
-            }
-        }
-
 
         dst.push_back(num_img);//building output list
-        imshow("only box" , num_img);
-        waitKey(0);
-        boxes.clear();
-        valid.clear();
-        valid1.clear();
-        valid_index.clear();
-        valid_index1.clear();
+
+
     }
-    //cout<<dst.size()<<endl;
+
+
+    cout<<dst.size()<<endl;
+    for(int i = 0 ; i<dst.size() ; i++){
+        imshow("dst i",dst[i]);
+        waitKey(0);
+    }
     //cout<<valid.size()<<endl;
     //cout<<valid1.size()<<endl;
 }

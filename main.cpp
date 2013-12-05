@@ -2,7 +2,7 @@
 
 int main (int argc , char **argv){
     Mat img = imread(argv[1],1);
-    InParams params;
+    Num_Extract::InParams params;
     params.classes = 10;
     params.classifier = 1;
     strcpy(params.pathToImages,"./images");
