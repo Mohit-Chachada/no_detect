@@ -211,7 +211,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     bool prevBoxwasGood = false;
     bool badBoxAfterGood = false;
 
-<<<<<<< HEAD
+
         /*
         Canny(bgr_planes[0],grey1,0,256,5);
         Canny(bgr_planes[1],grey2,0,256,5);
@@ -220,9 +220,9 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
         max(grey1,grey3,grey);//getting strongest edges
         //max(grey,grey5,grey);
 */
-=======
+
     Mat ext_prev;
->>>>>>> origin/extract
+
 
     Rect box_prev;
 
