@@ -4,6 +4,14 @@ Num_Extract::Num_Extract(){
 
 }
 
+Num_Extract::TaskReturn::TaskReturn(){
+
+}
+
+//Num_Extract::TaskReturn::~TaskReturn(){
+
+//}
+
 Num_Extract::Num_Extract(Num_Extract::InParams params){
     _classifier = params.classifier;    // use 1 SVM
     _train_samples = params.train_samples;
@@ -25,8 +33,8 @@ Num_Extract::Num_Extract(Num_Extract::InParams params){
 }
 
 
-Num_Extract::~Num_Extract(){
-}
+//Num_Extract::~Num_Extract(){
+//}
 
 bool Num_Extract::A_encloses_B(RotatedRect A, RotatedRect B){
     Point2f ptsA[4];
@@ -157,7 +165,7 @@ bool Num_Extract::validate (Mat mask, Mat pre){
                 validate = true;
                 threshf = thresh;
             }
-            thresh = thresh + 1000/11;
+            thresh = thresh + 1000/6;
             valid_index.clear();
         }
     }
@@ -171,22 +179,26 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     return validate;
 }
 
-void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
+vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
+
+    //bool validity = validate(mask,pre);
+
+    //is_valid = validity;
+    is_valid = true;
+
     Mat rot_pre;
+
+    vector<Mat> dst;
+
+    vector<Mat>masked = extract(mask,pre);
 
     Scalar color = Scalar(255,255,255);
 
     pre.copyTo(rot_pre);
 
-    vector<Mat>masked;
-
-    for(int i = 0 ; i<src.size() ; i++){
-        masked.push_back(src[i]);
-    }
-
     /*for(int i = 0 ; i < masked.size() ; i++){
           imshow("masked",masked[i]);
-          waitKey(0);
+          ////waitkey(0);
       }*/
 
     Mat grey,grey0,grey1,grey2,grey3;
@@ -227,9 +239,10 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     Rect box_prev;
 
     for(int i = 0 ; i<masked.size() ; i++){
-        double thresh = 1000;
 
-        while (thresh <= 1000) {
+        double thresh = 800;
+
+        while (thresh < 1500) {
 
             vector<Mat> bgr_planes;
 
@@ -289,7 +302,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
             /*for (int j = 0; j < 4; j++)
                 line(image, pts[j], pts[(j+1)%4], Scalar(0,255,0));
             imshow("outrect" , outrect_img);
-            waitKey(0);*/
+            ////waitkey(0);*/
 
             angle = angle * 180/3.14;
 
@@ -297,8 +310,10 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
 
             if(angle<0){//building rotation matrices
                 rot_mat = getRotationMatrix2D(outrect.center,(-90-angle),1.0);
+                //cout<<"orient "<<(-90-angle)<<endl;
             }
             else{
+                //cout<<"orient "<<(90-angle)<<endl;
                 rot_mat = getRotationMatrix2D(outrect.center,(90-angle),1.0);
             }
             Mat img;
@@ -339,7 +354,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
                 drawContours( all_contours, contour , k ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
             }
             imshow("all contours",all_contours);
-            waitKey(0);
+            ////waitkey(0);
             */
             Mat box_n_contours = Mat::zeros(pre.size(),CV_8UC3);
             for(int k = 0 ; k < contour.size() ; k++){
@@ -351,7 +366,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
             }
 
             //imshow("contours with boxes except outermost",box_n_contours);
-            //waitKey(0);
+            //////waitkey(0);
 
             for (int j = 0 ; j < boxes.size() ; j++){
                 if(boxes[j].width*boxes[j].height < 0.7*areamax && boxes[j].width*boxes[j].height > 0.05*areamax){
@@ -372,7 +387,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
                 rectangle(first_test_boxes , valid[k] , color );
             }
             //imshow("after first test ",first_test_boxes);
-            //waitKey(0);
+            //////waitkey(0);
 
             Mat final_boxes = Mat::zeros(pre.size(),CV_8UC3);
             for(int k = 0 ; k < valid1.size() ; k++){
@@ -382,7 +397,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
 
             //imshow("final valid boxes and contours",final_boxes);
 
-            //waitKey(0);
+            //////waitkey(0);
 
             Rect box = valid1[0];
             for(int j = 1 ; j<valid1.size() ; j++){ // now joining all valid boxes to extract the number
@@ -395,7 +410,7 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
             ext_number = rot_pre & final_mask;//applying final_mask onto rot_pre
 
             //imshow("extracted no." , ext_number);
-            //waitKey(0);
+            //////waitkey(0);
 
             //Mat ext_prev = Mat::zeros(ext_number.size(),CV_8UC3);
 
@@ -404,13 +419,13 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
             valid1.clear();
             valid_index.clear();
             valid_index1.clear();
-            cout<<"threshold level "<<thresh<<endl;
-            thresh += 2000/200;
+            //cout<<"threshold level "<<thresh<<endl;
+            thresh += 2000/10;
             double ratio = (box.width*box.height)/areamax;
             double aspect_ratio = (float)box.height/(float)box.width;
-            cout <<"areamax is "<<areamax<<"  detected area is "<<box.width*box.height<<endl;
+            /*cout <<"areamax is "<<areamax<<"  detected area is "<<box.width*box.height<<endl;
             cout <<"ratio is : "<<ratio<<endl;
-            cout<<"aspect ratio is :"<<aspect_ratio<<endl;
+            cout<<"aspect ratio is :"<<aspect_ratio<<endl;*/
 
             if(aspect_ratio>1.4 && aspect_ratio<1.65 && ratio>0.25 && ratio<0.55){
                 goodBoxFound = true;
@@ -423,9 +438,9 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
             if(badBoxAfterGood){
                 ext_number = ext_prev;
                 break;
-            }
+            }/*
             cout<<"good box : "<<goodBoxFound<<endl;
-            cout<<"bad box after good : "<<badBoxAfterGood<<endl;
+            cout<<"bad box after good : "<<badBoxAfterGood<<endl;*/
             ext_number.copyTo(ext_prev);
             prevBoxwasGood = goodBoxFound;
             box_prev = box;
@@ -464,17 +479,15 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     cout<<dst.size()<<endl;
     for(int i = 0 ; i<dst.size() ; i++){
         imshow("dst i",dst[i]);
-        waitKey(0);
+        //waitKey(0);
     }
+    return dst;
     //cout<<valid.size()<<endl;
     //cout<<valid1.size()<<endl;
 }
 
-void Num_Extract::extract(Mat mask, Mat pre){
-    bool valid = validate(mask,pre);
+vector<Mat> Num_Extract::extract(Mat mask, Mat pre){
 
-    is_valid = valid;
-    //bool valid = true;
 
     vector<int> bins_ind ;
     std::vector<std::vector<cv::Point> > contour;
@@ -482,7 +495,7 @@ void Num_Extract::extract(Mat mask, Mat pre){
 
     Mat img ;
     Mat test = Mat::zeros( pre.size(), CV_8UC3 );
-    if(valid){
+    if(is_valid){
         cout <<"validated\n";
         Canny(mask,img,0,256,5);
         cv::findContours(img, contour, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
@@ -554,8 +567,9 @@ void Num_Extract::extract(Mat mask, Mat pre){
                 }
             }
         }
+        return(masked);
 
-        extract_Number(pre,masked);
+        //extract_Number(pre,masked);
 
     }
 
@@ -916,7 +930,7 @@ vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
     // test histogram
     resize(test_img,outfile,Size(2*sizex,sizey));
     imshow("test_img",outfile);
-    waitKey(0);
+    ////waitkey(0);
     IplImage copy = outfile;
     IplImage* img2 = &copy;
     vector<float> ders;
@@ -1051,7 +1065,7 @@ void Num_Extract::RunSelfTest(KNearest& knn2, CvSVM& SVM2)
         }
         cout << "Right " << (int) ((detectedClass)) << "\n";
         imshow("single", stagedImage);
-        waitKey(0);
+        ////waitkey(0);
     }
 
 }
@@ -1143,7 +1157,7 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
                 case 1:
                 {
                     cout<<"here\n";
-                    waitKey(0);
+                    ////waitkey(0);
                     result = SVM.predict(sample2);
                     break;
                 }
@@ -1164,7 +1178,7 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
                 cout << result << "\n";
 
                 imshow("single", stagedImage);
-                waitKey(0);
+                ////waitkey(0);
             }
 
         }
@@ -1403,26 +1417,42 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
 
 
 
-    waitKey(0);
+    ////waitkey(0);
 }*/
 
-void Num_Extract::run(Mat preprocessed_image){
 
-    //// Yellow Color Detection
+int Num_Extract::mode(vector<int> list){
+    int size = list.size();
+    int count[4]={0,0,0,0};
+    for(int i = 0 ; i<size ; i++){
+        for(int j = 0 ; j<4 ; j++){
+            if(list[i]==_print_nos[j]){
+                count[j]++;
+            }
+        }
+    }
+    int maxcount = 0;
+    int index;
+    for(int i = 0 ;i<4;i++){
+        if(count[i]>maxcount){
+            maxcount = count[i];
+            index = i;
+        }
+    }
+    return _print_nos[index];
+}
+
+vector<vector<int> > Num_Extract::run(Mat mask, Mat pre){
+    vector<vector<int> > detected_nos;
+    detected_nos.resize(2);
     //Scalar lower(29,92,114);
     //Scalar higher(37,256,256);
-    Scalar lower(0,92,114);
-    Scalar higher(74,256,256);
-    Mat img_HSV = Mat::zeros( preprocessed_image.size(), CV_8UC3 );
-    cvtColor(preprocessed_image,img_HSV,CV_BGR2HSV);
-    Mat after_colord;
-    inRange(img_HSV,lower,higher,after_colord);
+    clock_t time = clock();
 
-    //// Extracting Number region for all detected bins
-    //// Output: dst [vertically oriented]
-    extract(after_colord,preprocessed_image);
+    vector<Mat> dst = extract_Number(mask,pre);
+    time = clock()-time;
+    cout<<"ex_Number "<<((float)time)/CLOCKS_PER_SEC<<endl;
 
-    //// Rotating all by 180
     vector<Mat> dst_flipped;
     Mat tmp;
 
@@ -1483,8 +1513,78 @@ void Num_Extract::run(Mat preprocessed_image){
             cout << result_hogm_rev[i][j]<<'\t';
         }
         cout << endl;
+    }
+    for(int i = 0 ; i<result_hogm.size() ; i++ ){
+        result_hogm[i].push_back(all_predicted[i]);
+        detected_nos[0].push_back(mode(result_hogm[i]));
+        result_hogm_rev[i].push_back(all_predicted_rev[i]);
+        detected_nos[1].push_back(mode(result_hogm_rev[i]));
+    }
+    return detected_nos;
+}
+
+Num_Extract::TaskReturn Num_Extract::getInfo(Mat pre){
+
+    Scalar lower(0,92,114);
+    Scalar higher(74,256,256);
+    Mat img2 = Mat::zeros( pre.size(), CV_8UC3 );
+    cvtColor(pre,img2,CV_BGR2HSV);
+    Mat mask;
+    inRange(img2 , lower , higher , mask);
+
+    Num_Extract::TaskReturn marker;
+    vector<Mat> bins = extract(mask,pre);
+
+    marker._no_of_bins = bins.size();
+    RotatedRect boundingRects[bins.size()];
+    Mat grey,thresh;
+    marker._area_of_bins = 0;
+    marker._orientation = 0;
+
+    for(int i = 0 ; i<bins.size() ; i++){
+        vector<vector<Point> > contour;
+        cvtColor(bins[i],grey,CV_BGR2GRAY);
+        Canny(grey,thresh,0,256,5);
+        findContours(thresh,contour,CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+        double areamax = 0;
+        int index;
+        for(int j = 0 ; j< contour.size() ; j++){
+            if(contourArea(contour[j],false)>areamax){
+                index = j;
+                areamax = contourArea(contour[j],false);
+            }
+        }
+        boundingRects[i] = minAreaRect(Mat(contour[index]));
+        marker._bin_centers.push_back(boundingRects[i].center);
+        marker._area_of_bins += areamax;
+        float angle,width;
+        Point2f pts[4];
+        boundingRects[i].points(pts);
+        float dist1 = (sqrt((pts[0].y-pts[1].y)*(pts[0].y-pts[1].y) + (pts[0].x-pts[1].x)*(pts[0].x-pts[1].x)));
+        float dist2 = (sqrt((pts[0].y-pts[3].y)*(pts[0].y-pts[3].y) + (pts[0].x-pts[3].x)*(pts[0].x-pts[3].x)));
+        if (dist1>dist2) width = dist1;//getting the longer edge length of boundingRect[i]
+        else width = dist2;
+        for(int j = 0 ; j<4 ; j++){
+            float dist = sqrt((pts[j].y-pts[(j+1)%4].y)*(pts[j].y-pts[(j+1)%4].y) + (pts[j].x-pts[(j+1)%4].x)*(pts[j].x-pts[(j+1)%4].x));
+            if(dist==width){
+                angle = atan((pts[j].y-pts[(j+1)%4].y)/(pts[(j+1)%4].x-pts[j].x));
+            }
+        }
+        angle = (180/pi)*angle;
+        if(angle>0){
+            marker._orientation += (90-angle);
+        }
+        else{
+            marker._orientation += (-90-angle);
+        }
 
     }
+    marker._orientation = marker._orientation/marker._no_of_bins;
+    marker._detected_nos = run(mask,pre);
+    cout<<"no of bins "<<marker._no_of_bins<<endl;
+    cout<<"marker orientation "<<marker._orientation<<endl;
+    cout<<"bin center "<<marker._bin_centers<<endl;
+    return marker;
 }
 
 

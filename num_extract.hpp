@@ -11,6 +11,7 @@
 #include <math.h>
 #include <time.h>
 #include "svm.h"
+#include <vector>
 
 using namespace cv;
 using namespace std;
@@ -30,13 +31,16 @@ private:
     char _pathToImages[200];
     bool _temp_match;
     int _print_nos[4];
+    bool is_valid ;
+
 
 protected:
 
     bool A_encloses_B(RotatedRect A, RotatedRect B);
     bool validate (Mat mask, Mat pre);
-    void extract_Number(Mat pre , vector<Mat>src);
-    void extract(Mat mask, Mat pre);
+    vector<Mat> extract_Number(Mat mask,Mat pre);
+    vector<Mat> extract(Mat mask, Mat pre);
+    int mode(vector<int> list);
 
     void LearnFromImages(CvMat* trainData, CvMat* trainClasses);
     void RunSelfTest(KNearest& knn2, CvSVM& SVM2);
@@ -65,15 +69,25 @@ public:
         int print_nos[4];
     };
 
+    class TaskReturn{
+    public:
+        int _no_of_bins;
+        vector<Point> _bin_centers;
+        double _orientation;
+        int _area_of_bins;
+        vector<vector<int> > _detected_nos;
+        TaskReturn();
+        //~TaskReturn();
+    };
+
     Num_Extract(Num_Extract::InParams params);
     Num_Extract();
-    ~Num_Extract();
+    //~Num_Extract();
     double pi;
     
-    void run (Mat img);
+    vector<vector<int> > run (Mat mask,Mat pre);
 
-    vector<Mat> dst;
-    bool is_valid ;
+    Num_Extract::TaskReturn getInfo(Mat img);
 
 };
 
