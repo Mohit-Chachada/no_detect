@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "svm.h"
+#include "/home/anmol/ros_workspace/robosub/auv_vision/src/lib/no_detect/svm.h"
 #include <vector>
 
 using namespace cv;
@@ -38,7 +38,7 @@ protected:
 
     bool A_encloses_B(RotatedRect A, RotatedRect B);
     bool validate (Mat mask, Mat pre);
-    vector<Mat> extract_Number(Mat mask,Mat pre);
+    vector<Mat> extract_Number(vector<Mat> mask,Mat pre);
     vector<Mat> extract(Mat mask, Mat pre);
     int mode(vector<int> list);
 
@@ -85,9 +85,9 @@ public:
     //~Num_Extract();
     double pi;
     
-    vector<vector<int> > run (Mat mask,Mat pre);
+    Num_Extract::TaskReturn run (Mat mask,Mat pre);
 
-    Num_Extract::TaskReturn getInfo(Mat img);
+    //Num_Extract::TaskReturn getInfo(Mat img,Mat pre);
 
 };
 
