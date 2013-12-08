@@ -16,7 +16,15 @@ int main (int argc , char **argv){
     Num_Extract Num1(params);
     //Num1.setParams(params);
     Num_Extract::TaskReturn marker;
-    marker = Num1.getInfo(img);
+
+	Scalar lower(0,92,114);
+    Scalar higher(74,256,256);
+    Mat img2 = Mat::zeros( img.size(), CV_8UC3 );
+    cvtColor(img,img2,CV_BGR2HSV);
+    Mat output;
+	inRange(img2 , lower , higher , output);
+
+    marker = Num1.run(output,img);
     time = clock()-time;
     float runtime = ((float)time)/CLOCKS_PER_SEC;
     cout<<"run time "<< runtime << endl;
