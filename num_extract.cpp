@@ -198,7 +198,7 @@ vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
 
     /*for(int i = 0 ; i < masked.size() ; i++){
           imshow("masked",masked[i]);
-          ////waitkey(0);
+          //waitKey(0);
       }*/
 
     Mat grey,grey0,grey1,grey2,grey3;
@@ -302,7 +302,7 @@ vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
             /*for (int j = 0; j < 4; j++)
                 line(image, pts[j], pts[(j+1)%4], Scalar(0,255,0));
             imshow("outrect" , outrect_img);
-            ////waitkey(0);*/
+            //waitKey(0);*/
 
             angle = angle * 180/3.14;
 
@@ -354,7 +354,7 @@ vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
                 drawContours( all_contours, contour , k ,color , 1 ,8 ,vector<Vec4i>() ,0 , Point() );
             }
             imshow("all contours",all_contours);
-            ////waitkey(0);
+            //waitKey(0);
             */
             Mat box_n_contours = Mat::zeros(pre.size(),CV_8UC3);
             for(int k = 0 ; k < contour.size() ; k++){
@@ -366,7 +366,7 @@ vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
             }
 
             //imshow("contours with boxes except outermost",box_n_contours);
-            //////waitkey(0);
+            ////waitKey(0);
 
             for (int j = 0 ; j < boxes.size() ; j++){
                 if(boxes[j].width*boxes[j].height < 0.7*areamax && boxes[j].width*boxes[j].height > 0.05*areamax){
@@ -387,7 +387,7 @@ vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
                 rectangle(first_test_boxes , valid[k] , color );
             }
             //imshow("after first test ",first_test_boxes);
-            //////waitkey(0);
+            ////waitKey(0);
 
             Mat final_boxes = Mat::zeros(pre.size(),CV_8UC3);
             for(int k = 0 ; k < valid1.size() ; k++){
@@ -397,7 +397,7 @@ vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
 
             //imshow("final valid boxes and contours",final_boxes);
 
-            //////waitkey(0);
+            ////waitKey(0);
 
             Rect box = valid1[0];
             for(int j = 1 ; j<valid1.size() ; j++){ // now joining all valid boxes to extract the number
@@ -410,7 +410,7 @@ vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
             ext_number = rot_pre & final_mask;//applying final_mask onto rot_pre
 
             //imshow("extracted no." , ext_number);
-            //////waitkey(0);
+            ////waitKey(0);
 
             //Mat ext_prev = Mat::zeros(ext_number.size(),CV_8UC3);
 
@@ -479,7 +479,7 @@ vector<Mat> Num_Extract::extract_Number(Mat mask,Mat pre){
     cout<<dst.size()<<endl;
     for(int i = 0 ; i<dst.size() ; i++){
         imshow("dst i",dst[i]);
-        //waitKey(0);
+        waitKey(0);
     }
     return dst;
     //cout<<valid.size()<<endl;
@@ -504,6 +504,7 @@ vector<Mat> Num_Extract::extract(Mat mask, Mat pre){
         for(int i = 0 ; i<contour.size() ; i++){
             drawContours(test,contour,i,color,CV_FILLED);
         }
+
 
         for(int i = 0 ; i<contour.size() ; i++){
             Mat img2 = Mat::zeros( img.size(), CV_8UC3 );
@@ -930,7 +931,7 @@ vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
     // test histogram
     resize(test_img,outfile,Size(2*sizex,sizey));
     imshow("test_img",outfile);
-    ////waitkey(0);
+    //waitKey(0);
     IplImage copy = outfile;
     IplImage* img2 = &copy;
     vector<float> ders;
@@ -1065,7 +1066,7 @@ void Num_Extract::RunSelfTest(KNearest& knn2, CvSVM& SVM2)
         }
         cout << "Right " << (int) ((detectedClass)) << "\n";
         imshow("single", stagedImage);
-        ////waitkey(0);
+        //waitKey(0);
     }
 
 }
@@ -1157,7 +1158,7 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
                 case 1:
                 {
                     cout<<"here\n";
-                    ////waitkey(0);
+                    //waitKey(0);
                     result = SVM.predict(sample2);
                     break;
                 }
@@ -1178,7 +1179,7 @@ vector<int> Num_Extract::Classification(KNearest knearest, CvSVM SVM, Mat _image
                 cout << result << "\n";
 
                 imshow("single", stagedImage);
-                ////waitkey(0);
+                //waitKey(0);
             }
 
         }
@@ -1417,7 +1418,7 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
 
 
 
-    ////waitkey(0);
+    //waitKey(0);
 }*/
 
 
