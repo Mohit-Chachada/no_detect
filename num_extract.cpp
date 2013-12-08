@@ -227,9 +227,9 @@ void Num_Extract::extract_Number(Mat pre , vector<Mat>src ){
     Rect box_prev;
 
     for(int i = 0 ; i<masked.size() ; i++){
-        double thresh = 10;
+        double thresh = 1000;
 
-        while (thresh < 2000) {
+        while (thresh <= 1000) {
 
             vector<Mat> bgr_planes;
 
