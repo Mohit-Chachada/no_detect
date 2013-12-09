@@ -1282,11 +1282,10 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
         tmp.index = n+1;
         tmp.value = test_scaled.at(n);
         x[n] = tmp;
-    cout<< " n " <<n<<" test_scaled[n] " <<test_scaled.at(n) <<endl;
+
     }
     x[ders.size()].index = -1;
     double predictedValue = svm_predict(model, x);
-    cout<< "Predicted No is "<<predictedValue<<"\n";
     return predictedValue;
 }
 
