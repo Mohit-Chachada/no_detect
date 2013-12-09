@@ -10,8 +10,10 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "/home/anmol/ros_workspace/robosub/auv_vision/src/lib/no_detect/svm.h"
+#include "svm.h"
+#include <fstream>
 #include <vector>
+#include "svm-scale.h"
 
 using namespace cv;
 using namespace std;
@@ -82,7 +84,7 @@ public:
 
     Num_Extract(Num_Extract::InParams params);
     Num_Extract();
-    //~Num_Extract();
+    ~Num_Extract();
     double pi;
     
     Num_Extract::TaskReturn run (Mat mask,Mat pre);

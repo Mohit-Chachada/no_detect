@@ -47,6 +47,7 @@ char* readline(FILE *input);
 
 std::vector<float> scale_main (int argc, char **argv, char* fscaled_name)
 {
+    scaled_values.clear();  ///ADD
 	int i,index;
 	FILE *fp, *fp_restore = NULL;
 	char *save_filename = NULL;
@@ -314,7 +315,7 @@ fprintf(fp_scaled_OP,"\n");	/// ADD
 		for(i=next_index;i<=max_index;i++)
 			output(i,0);
 
-		printf("\n");
+        //printf("\n");
 	}
 
 	if (new_num_nonzeros > num_nonzeros)
@@ -362,7 +363,7 @@ void output_target(double value)
 			     (value - y_min)/(y_max-y_min);
 	}
 fprintf(fp_scaled_OP,"%g ",value);	/// ADD
-	printf("%g ",value);
+    //printf("%g ",value);
 
 }
 
@@ -386,7 +387,7 @@ void output(int index, double value)
 	{
 fprintf(fp_scaled_OP, "%d:%g ",index, value);	/// ADD
 scaled_values.push_back(value);		///ADD
-		printf("%d:%g ",index, value);
+    //	printf("%d:%g ",index, value);      ///COMMENTED
 		new_num_nonzeros++;
 	}
 }

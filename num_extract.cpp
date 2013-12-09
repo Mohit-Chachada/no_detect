@@ -16,8 +16,8 @@ Num_Extract::Num_Extract(Num_Extract::InParams params){
     _classifier = params.classifier;    // use 1 SVM
     _train_samples = params.train_samples;
     _classes = params.classes;
-    sizex = 40;
-    sizey = 70;
+    sizex = 30;
+    sizey = 80;
     ImageSize = sizex * sizey;
     HOG3_size=81;
     sprintf(_pathToImages,"%s",params.pathToImages);
@@ -33,8 +33,8 @@ Num_Extract::Num_Extract(Num_Extract::InParams params){
 }
 
 
-//Num_Extract::~Num_Extract(){
-//}
+Num_Extract::~Num_Extract(){
+}
 
 bool Num_Extract::A_encloses_B(RotatedRect A, RotatedRect B){
     Point2f ptsA[4];
@@ -233,7 +233,7 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
     bool badBoxAfterGood = false;
 
 
-        /*
+    /*
         Canny(bgr_planes[0],grey1,0,256,5);
         Canny(bgr_planes[1],grey2,0,256,5);
         Canny(bgr_planes[2],grey3,0,256,5);
@@ -404,7 +404,7 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
             }
 
             imshow("after first test ",first_test_boxes);
-            waitKey(0);
+            //waitKey(0);
 
             Mat final_boxes = Mat::zeros(pre.size(),CV_8UC3);
             for(int k = 0 ; k < valid1.size() ; k++){
@@ -413,7 +413,7 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
             }//valid_index1 is required to draw the corresponding contours
 
             imshow("final valid boxes and contours",final_boxes);
-            waitKey(0);
+            //waitKey(0);
             Rect box;
             if(valid1.size()>0){
                 box = valid1[0];
@@ -1221,26 +1221,60 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
     Mat outfile;
     resize(_image,outfile,Size(2*sizex,sizey));
 
+    imshow("test",outfile);
+    waitKey(0);
+
     IplImage copy = outfile;
     IplImage* img2 = &copy;
     vector<float> ders;
     HOG3(img2,ders);
 
     //svm_scale
+
+    // storing test data
+    ofstream testData;
+    testData.open("test_data");
+    //testData.clear();
+    testData<<10<<" ";
+    for (int n = 0; n < ders.size(); n++)
+    {
+        testData << (n+1) << ":";
+        testData << ders.at(n) << " ";
+    }
+    //testData << "-1:0";
+    testData << "\n";
+    testData.close();
+
+    // scaling test_data        // -r training_data.range test_data > test_data.scale
+    int Tscale_argc = 4;
+    char **Tscale_argv;
+    Tscale_argv = new char* [Tscale_argc];
+
+    for (int i=0; i< Tscale_argc; i++) {
+        Tscale_argv[i] = new char [100];
+    }
+    sprintf(Tscale_argv[1], "%s", "-r");
+    sprintf(Tscale_argv[2], "%s", "training_data.range");
+    sprintf(Tscale_argv[3], "%s", "test_data");
+    char* TscaleOP;
+    TscaleOP = new char [100];
+    sprintf(TscaleOP, "%s", "test_data.scale");
+    vector<float> test_scaled;
+    test_scaled = scale_main(Tscale_argc,Tscale_argv,TscaleOP);
+
     svm_node* x;
     x = new svm_node [ders.size()+1];
-
     for (int n = 0; n < ders.size(); n++)
     {
         svm_node tmp;
         tmp.index = n+1;
-        tmp.value = ders.at(n);
+        tmp.value = test_scaled.at(n);
         x[n] = tmp;
+    cout<< " n " <<n<<" test_scaled[n] " <<test_scaled.at(n) <<endl;
     }
     x[ders.size()].index = -1;
-
     double predictedValue = svm_predict(model, x);
-
+    cout<< "Predicted No is "<<predictedValue<<"\n";
     return predictedValue;
 }
 
@@ -1556,7 +1590,7 @@ Num_Extract::TaskReturn Num_Extract::run(Mat mask, Mat pre){
 
         int all_predicted[dst.size()],all_predicted_rev[dst.size()];
 
-        const char* modelName = "/home/anmol/ros_workspace/robosub/auv_vision/src/lib/no_detect/training_data.model";
+        const char* modelName = "training_data.model";
 
         svm_model* model = loadModel(modelName);
 

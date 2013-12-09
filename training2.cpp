@@ -408,7 +408,7 @@ int main (int argc, char** argv) {
     // test data [O/P]
     Mat img,outfile;
     char file[255];
-    sprintf(file, "%s/%d.png", pathToImages, 10);
+    sprintf(file, "%s/%d.png", pathToImages, 16);
     img = imread(file, 1);
     if (!img.data)
     {
