@@ -1236,6 +1236,8 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
     Mat outfile;
     resize(_image,outfile,Size(2*sizex,sizey));
 
+    imshow("PredictNumber",outfile);
+    waitKey(0);
     IplImage copy = outfile;
     IplImage* img2 = &copy;
     vector<float> ders;
