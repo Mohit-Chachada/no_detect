@@ -17,13 +17,16 @@ int main (int argc , char **argv){
     //Num1.setParams(params);
     Num_Extract::TaskReturn marker;
 
-	Scalar lower(0,92,114);
-    Scalar higher(74,256,256);
+    //Scalar lower(0,50,80);
+    //Scalar higher(74,256,256);
+    Scalar lower(0,126,35);
+    Scalar higher(101,256,212);
     Mat img2 = Mat::zeros( img.size(), CV_8UC3 );
     cvtColor(img,img2,CV_BGR2HSV);
     Mat output;
 	inRange(img2 , lower , higher , output);
-
+    imshow ("O/P",output);
+    waitKey(0);
     marker = Num1.run(output,img);
     time = clock()-time;
     float runtime = ((float)time)/CLOCKS_PER_SEC;

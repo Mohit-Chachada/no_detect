@@ -33,8 +33,11 @@ private:
     char _pathToImages[200];
     bool _temp_match;
     int _print_nos[4];
-    bool is_valid ;
 
+    int N;  // continuos N frame counts for correct detection
+    vector<vector<int> > Nmaxcount1;
+    vector<vector<int> > Nmaxcount2;
+    int cindex;
 
 protected:
 
@@ -42,7 +45,7 @@ protected:
     bool validate (Mat mask, Mat pre);
     vector<Mat> extract_Number(vector<Mat> mask,Mat pre);
     vector<Mat> extract(Mat mask, Mat pre);
-    int mode(vector<int> list);
+    int mode(vector<int> list, int* maxcount);
 
     void LearnFromImages(CvMat* trainData, CvMat* trainClasses);
     void RunSelfTest(KNearest& knn2, CvSVM& SVM2);
@@ -71,25 +74,28 @@ public:
         int print_nos[4];
     };
 
-    class TaskReturn{
+    class SubTaskReturn{
     public:
         int _no_of_bins;
         vector<Point> _bin_centers;
         double _orientation;
         int _area_of_bins;
         vector<vector<int> > _detected_nos;
-        TaskReturn();
-        //~TaskReturn();
+        vector<vector<int> > _mode_counts;
+        bool _numbers_found;
+        SubTaskReturn();
+        //~SubTaskReturn();
     };
 
     Num_Extract(Num_Extract::InParams params);
     Num_Extract();
     ~Num_Extract();
     double pi;
-    
-    Num_Extract::TaskReturn run (Mat mask,Mat pre);
-
-    //Num_Extract::TaskReturn getInfo(Mat img,Mat pre);
+    bool is_valid;
+    bool numbers_found;
+    Num_Extract::SubTaskReturn run (Mat mask,Mat pre);
+    vector<int> getPrintNos();
+    //Num_Extract::SubTaskReturn getInfo(Mat img,Mat pre);
 
 };
 

@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <vector>
 
-using namespace std;
 void exit_with_help();
 void output_target(double value);
 void output(int index, double value);

@@ -4,11 +4,11 @@ Num_Extract::Num_Extract(){
 
 }
 
-Num_Extract::TaskReturn::TaskReturn(){
+Num_Extract::SubTaskReturn::SubTaskReturn(){
 
 }
 
-//Num_Extract::TaskReturn::~TaskReturn(){
+//Num_Extract::SubTaskReturn::~SubTaskReturn(){
 
 //}
 
@@ -29,6 +29,22 @@ Num_Extract::Num_Extract(Num_Extract::InParams params){
     _print_nos[1]= params.print_nos[1];
     _print_nos[2]= params.print_nos[2];
     _print_nos[3]= params.print_nos[3];
+
+    // average of N frames
+    N = 5;
+    cindex = 0;
+    Nmaxcount1.resize (N);  // unflipped
+    Nmaxcount2.resize (N);  // flipped
+    for(int i=0;i<N;i++)
+    {
+        Nmaxcount1[i].resize(4);
+        Nmaxcount2[i].resize(4);
+        for (int j=0; j<4; j++){
+            Nmaxcount1[i][j]=0;
+            Nmaxcount2[i][j]=0;
+        }
+    }
+
 
 }
 
@@ -85,7 +101,7 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     }
 
     if(count == 0 ){
-        cout<<"not valid\n";
+        cout<<"bin not valid\n";
         return false;//filter out random noise
     }
     Mat grey,grey0,grey1,grey2,grey3;
@@ -178,8 +194,8 @@ bool Num_Extract::validate (Mat mask, Mat pre){
     else{
         validate = true;
     }
-    cout<<"validate "<<validate;
-    cout<<" validate1 "<<validate1<<endl;
+    cout<<"bin validate "<<validate<<"\t";
+    cout<<"bin validate1 "<<validate1<<endl;
     if(validate || validate1){
         return true;
     }
@@ -246,6 +262,9 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
     for(int i = 0 ; i<masked.size() ; i++){
 
         double thresh = 10;
+
+        Point2f numboxcentre;
+        Point2f outerboxcentre;
 
         while (thresh < 2000) {
 
@@ -352,11 +371,14 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
             //grey = grey0;
 
             cv::findContours(grey, contour,hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
+            Rect outerbox;
 
             for(int j = 0 ; j<contour.size() ; j++){
                 boxes.push_back(boundingRect(Mat(contour[j])));
+                if (hierarchy[j][3]==-1) outerbox =boundingRect(Mat(contour[j]));
             }//making boxes out of all contours
             areamax = 0;
+            outerboxcentre = Point2f(outerbox.x+outerbox.width/2 , outerbox.y+outerbox.height/2);
 
             for(int j = 0 ; j<boxes.size() ; j++){
                 if(boxes[j].width*boxes[j].height > areamax){
@@ -426,8 +448,10 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
                 }
             }
 
-            Mat final_mask = Mat::zeros(pre.size(),CV_8UC3);
+            numboxcentre = Point2f(box.x+box.width/2 , box.y+box.height/2);
 
+
+            Mat final_mask = Mat::zeros(pre.size(),CV_8UC3);
             rectangle(final_mask , box , color ,CV_FILLED );//building the final mask
 
             ext_number = rot_pre & final_mask;//applying final_mask onto rot_pre
@@ -450,7 +474,7 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
             cout <<"ratio is : "<<ratio<<endl;
             cout<<"aspect ratio is :"<<aspect_ratio<<endl;*/
 
-            if(aspect_ratio>1.4 && aspect_ratio<1.65 && ratio>0.25 && ratio<0.55){
+            if(aspect_ratio<1.65 && ratio>0.25 && ratio<0.55){
                 goodBoxFound = true;
             }
 
@@ -458,15 +482,14 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
                 badBoxAfterGood = true;
             }
 
-            if(badBoxAfterGood){
-                ext_number = ext_prev;
+            box_prev = box;
+            if(goodBoxFound){
                 break;
             }/*
             cout<<"good box : "<<goodBoxFound<<endl;
             cout<<"bad box after good : "<<badBoxAfterGood<<endl;*/
             ext_number.copyTo(ext_prev);
             prevBoxwasGood = goodBoxFound;
-            box_prev = box;
 
         }
         Mat num_img = Mat::zeros(box_prev.height,box_prev.width,CV_8UC3);
@@ -493,6 +516,12 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
             }
         }
 
+        if (!num_img.empty()) {
+            if (numboxcentre.y < outerboxcentre.y) {
+                Mat rotmatrix = getRotationMatrix2D(Point2f(num_img.cols/2,num_img.rows/2),180,1.0);
+                warpAffine(num_img,num_img,rotmatrix,num_img.size());
+            }
+        }
         dst.push_back(num_img);//building output list
 
 
@@ -939,7 +968,7 @@ vector<Mat> Num_Extract::HOGMatching_Template() {
         string s_no = ss.str();
         Mat temp=imread((string)(_pathToImages)+"/"+s_no+".png");
         if(temp.empty()){
-            cout<<"empty image\n";
+            cout<<"Unable to load HOG template image\n";
         }
 
         Mat outfile;
@@ -993,9 +1022,9 @@ vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
         for (int j=0;j<nr_methods;j++) {
             int compare_method = j;
             comparison[i][j] = compareHist( test_hist2, temp_hist, compare_method );
-            cout<<comparison[i][j]<<"\t";
+            //cout<<comparison[i][j]<<"\t";
         }
-        cout<<"\n";
+        //cout<<"\n";
     }
 
     // finding matched template
@@ -1015,7 +1044,7 @@ vector<int> Num_Extract::HOGMatching_Compare(vector<Mat> hist, Mat test_img) {
         }
         result.push_back(_print_nos[matched_templ[j]]);
     }
-    cout<<matched_templ[0]<<"\t"<<matched_templ[1]<<"\t"<<matched_templ[2]<<"\t"<<matched_templ[3]<<"\n";
+    //cout<<matched_templ[0]<<"\t"<<matched_templ[1]<<"\t"<<matched_templ[2]<<"\t"<<matched_templ[3]<<"\n";
 
     // result: no detected by all 4 methods
     //result=_print_nos[matched_templ[3]];
@@ -1237,7 +1266,7 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
     resize(_image,outfile,Size(2*sizex,sizey));
 
     imshow("PredictNumber",outfile);
-    waitKey(0);
+    //waitKey(0);
     IplImage copy = outfile;
     IplImage* img2 = &copy;
     vector<float> ders;
@@ -1268,7 +1297,7 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
         Tscale_argv[i] = new char [100];
     }
     sprintf(Tscale_argv[1], "%s", "-r");
-    sprintf(Tscale_argv[2], "%s", "training_data.range");
+    sprintf(Tscale_argv[2], "%s", "/home/mohit/catkin_ws/src/robosub/auv_vision/src/lib/number_detect/training_data.range");
     sprintf(Tscale_argv[3], "%s", "test_data");
     char* TscaleOP;
     TscaleOP = new char [100];
@@ -1495,7 +1524,7 @@ int Num_Extract::PredictNumber(svm_model* model, Mat _image) {
 }*/
 
 
-int Num_Extract::mode(vector<int> list){
+int Num_Extract::mode(vector<int> list, int* maxcount){
     int size = list.size();
     int count[4]={0,0,0,0};
     for(int i = 0 ; i<size ; i++){
@@ -1505,29 +1534,29 @@ int Num_Extract::mode(vector<int> list){
             }
         }
     }
-    int maxcount = 0;
+    // int maxcount = 0;
+    *maxcount = 0;
     int index;
     for(int i = 0 ;i<4;i++){
-        if(count[i]>maxcount){
-            maxcount = count[i];
+        if(count[i]>(*maxcount)){
+            *maxcount = count[i];
             index = i;
         }
     }
     return _print_nos[index];
 }
 
-Num_Extract::TaskReturn Num_Extract::run(Mat mask, Mat pre){
-    vector<vector<int> > detected_nos;
-    detected_nos.resize(2);
+Num_Extract::SubTaskReturn Num_Extract::run(Mat mask, Mat pre){
+
     //Scalar lower(29,92,114);
     //Scalar higher(37,256,256);
     clock_t time = clock();
 
-    Num_Extract::TaskReturn marker;
+    Num_Extract::SubTaskReturn marker;
     is_valid = validate(mask,pre);
     if(is_valid){
         vector<Mat> bins = extract(mask,pre);
-        cout<<bins.size()<<endl;
+        //cout<<bins.size()<<endl;
         marker._no_of_bins = bins.size();
         RotatedRect boundingRects[bins.size()];
         Mat grey,thresh;
@@ -1580,10 +1609,11 @@ Num_Extract::TaskReturn Num_Extract::run(Mat mask, Mat pre){
 
         vector<Mat> dst_flipped;
         vector<Mat> dst = extract_Number(bins,pre);
-        bool numbers_found = true;
+        numbers_found = true;
         for(int i = 0 ; i<dst.size() ; i++){
             if (dst[i].empty())numbers_found = false;
         }
+
         if(numbers_found){
             Mat tmp;
 
@@ -1603,7 +1633,7 @@ Num_Extract::TaskReturn Num_Extract::run(Mat mask, Mat pre){
                 //waitKey(0);
             }
 
-        const char* modelName = "training_data.model";
+            const char* modelName = "/home/mohit/catkin_ws/src/robosub/auv_vision/src/lib/number_detect/training_data.model";
 
             int all_predicted[dst.size()],all_predicted_rev[dst.size()];
 
@@ -1613,12 +1643,12 @@ Num_Extract::TaskReturn Num_Extract::run(Mat mask, Mat pre){
             for(int i = 0 ; i<dst.size() ; i++){
 
                 int predictedValue = PredictNumber(model, dst[i]);
-                cout<< "Guess Value " << predictedValue <<endl;
+                cout<< "SVM Guess Value before flipping " << predictedValue <<endl;
 
                 all_predicted[i] = predictedValue;
 
                 int predictedValue_rev = PredictNumber(model, dst_flipped[i]);
-                cout<< "Guess Value after flipping " << predictedValue_rev <<endl;
+                cout<< "SVM Guess Value after flipping " << predictedValue_rev <<endl;
 
                 all_predicted_rev[i] = predictedValue_rev;
             }
@@ -1645,34 +1675,104 @@ Num_Extract::TaskReturn Num_Extract::run(Mat mask, Mat pre){
                 result = HOGMatching_Compare(hist,dst_flipped[i]);
                 result_hogm_rev.push_back(result);
             }
-            cout<<"unflipped \n";
+
+            cout<<"HOGM unflipped \n";
             for(int i = 0 ; i<result_hogm.size() ; i++ ){
                 for(int j = 0 ; j<result_hogm[i].size() ; j++){
                     cout << result_hogm[i][j]<<'\t';
                 }
                 cout << endl;
             }
-            cout<<"flipped \n";
+            cout<<"HOGM flipped \n";
             for(int i = 0 ; i<result_hogm_rev.size() ; i++ ){
                 for(int j = 0 ; j<result_hogm_rev[i].size() ; j++){
                     cout << result_hogm_rev[i][j]<<'\t';
                 }
                 cout << endl;
             }
-            for(int i = 0 ; i<result_hogm.size() ; i++ ){
+
+            // finding Mode of all the predicted numbers
+            int ModeNumber1;    //unflipped
+            int ModeNumber2;    //flipped
+            int maxcount1;      //unflipped
+            int maxcount2;      //flipped
+
+            vector<vector<int> > detected_nos;
+            vector<vector<int> > mode_counts;
+            detected_nos.resize(2);
+            mode_counts.resize(2);
+
+            for(int i = 0 ; i<bins.size() ; i++ ){
                 result_hogm[i].push_back(all_predicted[i]);
-                detected_nos[0].push_back(mode(result_hogm[i]));
+                ModeNumber1 = mode(result_hogm[i],&maxcount1);
+                detected_nos[0].push_back(ModeNumber1);
+                mode_counts[0].push_back(maxcount1);
+                cout<<"Mode Number "<<ModeNumber1<<"\t";
+                cout<<"Maxcount "<<maxcount1<<"/5 \t";
+                if (maxcount1<=2) cout<<"Not sure which no \n";
+                else cout<<"Number confirm\n";
+
                 result_hogm_rev[i].push_back(all_predicted_rev[i]);
-                detected_nos[1].push_back(mode(result_hogm_rev[i]));
+                ModeNumber2 = mode(result_hogm_rev[i],&maxcount2);
+                detected_nos[1].push_back(ModeNumber2);
+                mode_counts[1].push_back(maxcount2);
+                cout<<"Mode Number "<<ModeNumber2<<"\t";
+                cout<<"Maxcount "<<maxcount2<<"/5 \t";
+                if (maxcount2<=2) cout<<"Not sure which no \n";
+                else cout<<"Number confirm\n";
             }
+            /*
+            // taking N frames max count
+            if (cindex>N) cindex=0;
+
+            if (maxcount1>2) {
+                for (int n=0; n<4 ; n++) {
+                    if (ModeNumber1 == _print_nos[n]) Nmaxcount1[cindex][n]=1;
+                    else Nmaxcount1[cindex][n]=0;
+                }
+            }
+
+
+            if (maxcount2>2) {
+                for (int n=0; n<4 ; n++) {
+                    if (ModeNumber2 == _print_nos[n]) Nmaxcount2[cindex][n]=1;
+                    else Nmaxcount2[cindex][n]=0;
+                }
+            }
+            cindex = cindex + 1;
+
+            int sumNmaxcount1[4] = {0,0,0,0};
+            int sumNmaxcount2[4] = {0,0,0,0};
+            for (int k=0; k<N; k++) {
+
+                for (int j=0; j<4; j++) {
+                    if (Nmaxcount1[k][j]==1) sumNmaxcount1[j]++;
+                    if (Nmaxcount2[k][j]==1) sumNmaxcount2[j]++;
+                }
+            }
+
+            for (int h=0; h<4; h++) {
+                if (sumNmaxcount1[h] > N/2) cout<<"**********************Unflipped no is "<<_print_nos[h]<<"\n";
+                if (sumNmaxcount2[h] > N/2) cout<<"**********************Flipped no is "<<_print_nos[h]<<"\n";
+            }
+*/
+            time = clock()-time;
+            cout<<"ex_Number "<<((float)time)/CLOCKS_PER_SEC<<endl;
+            marker._detected_nos = detected_nos;
+            marker._mode_counts = mode_counts;
+
         }
-        time = clock()-time;
-        cout<<"ex_Number "<<((float)time)/CLOCKS_PER_SEC<<endl;
-
-
-
-        marker._detected_nos = detected_nos;
 
     }
     return marker;
 }
+
+vector<int> Num_Extract::getPrintNos() {
+    vector<int> numbers;
+    numbers.resize(4);
+    for (int i=0; i<4; i++) {
+        numbers[i] = _print_nos[i];
+    }
+    return numbers;
+}
+
