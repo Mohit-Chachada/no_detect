@@ -74,7 +74,7 @@ if (argc>=6){
     Mat img1 = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
     Mat img2 = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
    
-adaptiveThreshold(img1, img1, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 11, 0	);
+adaptiveThreshold(img1, img1, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 11, -1);
 adaptiveThreshold(img2, img2, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 11, 0);
 
 imshow("Adp thresh 1", img1);
@@ -223,7 +223,7 @@ waitKey(0);
 	  //-- PS.- radiusMatch can also be used here.
 	
 	  for( int i = 0; i < descriptors1.rows; i++ )
-	  { if( matches[i].distance < 2*min_dist )
+	  { if( matches[i].distance < 3*min_dist )
 	    { good_matches.push_back( matches[i]); }
 	  }		
      }
