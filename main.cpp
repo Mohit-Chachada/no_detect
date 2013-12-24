@@ -15,12 +15,12 @@ int main (int argc , char **argv){
     params.train_samples = 4;
     Num_Extract Num1(params);
     //Num1.setParams(params);
-    Num_Extract::TaskReturn marker;
+    Num_Extract::SubTaskReturn marker;
 
-    //Scalar lower(0,50,80);
-    //Scalar higher(74,256,256);
-    Scalar lower(0,126,35);
-    Scalar higher(101,256,212);
+    Scalar lower(0,92,114);
+    Scalar higher(74,256,256);
+    //Scalar lower(0,126,35);
+    //Scalar higher(101,256,212);
     Mat img2 = Mat::zeros( img.size(), CV_8UC3 );
     cvtColor(img,img2,CV_BGR2HSV);
     Mat output;

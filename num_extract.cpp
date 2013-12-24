@@ -534,8 +534,8 @@ vector<Mat> Num_Extract::extract_Number(vector<Mat>masked,Mat pre){
             cout<<"empty extracted number image \n";
         }
         else{
-            //imshow("dst i",dst[i]);
-            ////waitKey(0);
+            imshow("dst i",dst[i]);
+            waitKey(0);
         }
 
     }
